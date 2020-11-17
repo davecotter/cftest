@@ -1,0 +1,678 @@
+
+--------------------New CFTest Log----------------
+Size of CFIndex: 8
+PASS: 64bit CFTest
+PASS: Dictionary Ptr
+PASS: String Ptr
+------------------Strings---------------
+The next line should read yeah baby
+yeah baby
+PASS: Convert to/from DataRef
+
+foscoobyar contains scooby
+PASS: Containment
+The next line should read <foo bar>
+foo bar
+PASS: Replacement
+------------------Case Insensitive Compare---------------
+NeUi != ñéüî
+PASS: Diacritic Sensitive
+
+NeUi == ñéüî
+PASS: Diacritic Insensitive
+------------------Inequality---------------
+Cat < Dog
+PASS: Compare Less
+Dog > Cat
+PASS: Compare Greater
+Cat == Cat
+PASS: Compare Equal
+------------------Encoding---------------
+The next line should read <ñéüî>
+ñéüî
+conversion: Success!
+PASS: Encoding Conversion
+Sys Encoding: Western (Mac OS Roman)
+Sys IANA charset: macintosh
+PASS: Encoding to Codepage
+codepage: 1252
+PASS: Codepage to Encoding
+Iso Latin Encoding: Western (ISO Latin 1) (513)
+Iso Latin IANA charset: iso-8859-1
+PASS: Convert IANA CharSet To Encoding
+------------------Locale---------------
+---------
+LangStr: English
+Locale ID: en
+lang: en
+country: 
+CFDictionary:
+{
+	"kCFLocaleLanguageCodeKey": "en"
+}
+	kCFLocaleIdentifier: English
+	kCFLocaleLanguageCode: English
+	kCFLocaleCountryCode: 
+PASS: Convert Locale to Lang ID: “English”
+---------
+LangStr: French
+Locale ID: fr
+lang: fr
+country: 
+CFDictionary:
+{
+	"kCFLocaleLanguageCodeKey": "fr"
+}
+	kCFLocaleIdentifier: French
+	kCFLocaleLanguageCode: French
+	kCFLocaleCountryCode: France
+PASS: Convert Locale to Lang ID: “French”
+---------
+LangStr: German
+Locale ID: de
+lang: de
+country: 
+CFDictionary:
+{
+	"kCFLocaleLanguageCodeKey": "de"
+}
+	kCFLocaleIdentifier: German
+	kCFLocaleLanguageCode: German
+	kCFLocaleCountryCode: Germany
+PASS: Convert Locale to Lang ID: “German”
+---------
+LangStr: Portuguese
+Locale ID: pt
+lang: pt
+country: 
+CFDictionary:
+{
+	"kCFLocaleLanguageCodeKey": "pt"
+}
+	kCFLocaleIdentifier: Portuguese
+	kCFLocaleLanguageCode: Portuguese
+	kCFLocaleCountryCode: Portugal
+PASS: Convert Locale to Lang ID: “Portuguese”
+------------------Preferred Languages---------------
+CFArray:
+[
+	"en-US",
+	"es-US",
+	"hu-US",
+	"de-US",
+	"zh-Hans-US",
+	"hi-US"
+]
+------------------Preferred Language Match?---------------
+lang: en-US
+lang2: en-US
+lang match: Success!
+PASS: Preferred Language Match
+------------------Calendar---------------
+Calendar ID: gregorian
+CFDate:
+2017-07-19 17:18:02 +0000
+CFTimeZone:
+America/Los_Angeles (PDT) offset -25200 (Daylight)
+America/Los_Angeles
+year: 2017
+month: 7
+day: 19
+hour: 10
+minute: 18
+second: 2.738857
+Make sure time zone is correct in the next line:
+Wednesday, July 19, 2017 at 10:18:02 AM Pacific Daylight Time
+------------------Numbers---------------
+123,456.789
+$123,456.79
+------------------Bundle---------------
+PASS: Getting Bundle
+PASS: Getting Bundle URL
+CFURL:
+<CFURL 0x103000c10 [0x7fff99a7dda0]>{string = file:///Users/davec/Developer/depot/CFTest/project/mac_xcode/build/Debug/, encoding = 134217984, base = (null)}
+CFDictionary:
+{
+
+}
+------------------plist---------------
+PASS: Getting PList URL
+URL: file:///Users/davec/Developer/depot/CFTest/test_data/test.xml
+PASS: Reading PList file
+CFDictionary:
+{
+	"Next item ID (don't change this!!)": 8302,
+	"Current Venue": "Singers",
+	"Minor Version": 7,
+	"Playlists": [
+		{
+			"Genre": "",
+			"FreeDB extended data": "",
+			"Name": "Library",
+			"Current Playlist Item ID": 1,
+			"Is Category Locked": false,
+			"Ascending": 1,
+			"Playlist ID": 1,
+			"Columns": {
+				"SORTDIR": [
+					1,
+					1,
+					1,
+					1,
+					1,
+					1
+				],
+				"COLWIDS": [
+					80,
+					66,
+					246,
+					167,
+					167,
+					80
+				],
+				"COLUMNS": [
+					1346978632,
+					1936673092,
+					1851878757,
+					1634890867,
+					1634493037,
+					1685222510
+				],
+				"SORTCOL": 1936673092
+			},
+			"Artist": "",
+			"Playlist Type": 1,
+			"Sort By": 1936673092,
+			"Category": "",
+			"FreeDB Revision": 0,
+			"Year": 0
+		}
+	],
+	"Library Search Paths": {
+		"array": [
+
+		]
+	},
+	"Major Version": 1,
+	"Application Version": "1.0d49r27"
+}
+PASS: Writing PList file
+------------------xml---------------
+PASS: Getting XML URL
+URL: file:///Users/davec/Developer/depot/CFTest/test_data/Chiquitita.xml
+PASS: Reading XML file
+------------------CFTest Tests Ended--------------
+------------------New CFNetwork Log---------------
+------------------Bonjour Server---------------
+PASS: Allocate Bonjour
+Bonjour Attempt Registering: <CFTest> on “_http._tcp”
+PASS: Bonjour Server
+CFDictionary:
+{
+	"type": "_http._tcp.",
+	"name": "CFTest",
+	"domain": "local."
+}
+Bonjour Success: Registering: “CFTest” to “” () on port <>
+------------------Bonjour Browser---------------
+Bonjour Attempt Browsing: <> on “_http._tcp”
+PASS: Bonjour Browser START
+3 second delay...
+Bonjour Attempt Resolving: <kJams: Singers> on “_http._tcp.”
+Bonjour Attempt Resolving: <CFTest> on “_http._tcp.”
+Bonjour Attempt Resolving: <Photosmart> on “_http._tcp.”
+Bonjour Attempt Resolving: <kJams: Singers> on “_http._tcp.”
+Bonjour Attempt Resolving: <EPSON XP-430 Series> on “_http._tcp.”
+CFDictionary:
+{
+	"type": "_http._tcp.",
+	"name": "CFTest",
+	"domain": "190329316.members.btmm.icloud.com."
+}
+Bonjour Success: Registering: “CFTest” to “” () on port <>
+Bonjour Success: Resolving: “Photosmart” to “Photosmart.local.” (192.150.23.30) on port <80>
+Bonjour Attempt Resolving: <CFTest> on “_http._tcp.”
+Bonjour Success: Resolving: “CFTest” to “luna.local.” (192.150.23.72) on port <12345>
+Bonjour Success: Resolving: “EPSON XP-430 Series” to “EPSON899C41.local.” (192.150.23.74) on port <80>
+Bonjour Success: Resolving: “kJams: Singers” to “agape.local.” (192.150.23.109) on port <12345>
+Bonjour Success: Resolving: “kJams: Singers” to “luna.190329316.members.btmm.icloud.com.” (fdcd:7fd3:9a76:45e8:7c51:fb6d:49d3:2998) on port <80>
+Bonjour Success: Resolving: “CFTest” to “luna.190329316.members.btmm.icloud.com.” (fdcd:7fd3:9a76:45e8:7c51:fb6d:49d3:2998) on port <12345>
+PASS: Bonjour Browser FINISH
+CFArray:
+[
+	{
+		"port": "80",
+		"host": "Photosmart.local.",
+		"name": "Photosmart",
+		"type": "IPv4",
+		"address": "192.150.23.30"
+	},
+	{
+		"port": "12345",
+		"host": "luna.local.",
+		"name": "CFTest",
+		"type": "IPv4",
+		"address": "192.150.23.72"
+	},
+	{
+		"port": "80",
+		"host": "EPSON899C41.local.",
+		"name": "EPSON XP-430 Series",
+		"type": "IPv4",
+		"address": "192.150.23.74"
+	},
+	{
+		"port": "12345",
+		"host": "agape.local.",
+		"name": "kJams: Singers",
+		"type": "IPv4",
+		"address": "192.150.23.109"
+	},
+	{
+		"port": "80",
+		"host": "luna.190329316.members.btmm.icloud.com.",
+		"name": "kJams: Singers",
+		"type": "IPv6",
+		"address": "fdcd:7fd3:9a76:45e8:7c51:fb6d:49d3:2998"
+	},
+	{
+		"port": "12345",
+		"host": "luna.190329316.members.btmm.icloud.com.",
+		"name": "CFTest",
+		"type": "IPv6",
+		"address": "fdcd:7fd3:9a76:45e8:7c51:fb6d:49d3:2998"
+	}
+]
+------------------Round Trip Address Conversion---------------
+PASS: Bonjour: Name -> Addr: IPv4
+PASS: Bonjour: Addr -> Name: IPv4
+PASS: Bonjour: Name -> Addr: IPv6
+PASS: Bonjour: Addr -> Name: IPv6
+------------------Simple download---------------
+PASS: Simple download
+---- Headers:
+CFDictionary:
+{
+	"Server": "Apache",
+	"Content-Type": "text/html",
+	"MS-Author-Via": "DAV",
+	"Last-Modified": "Sun, 10 Aug 2014 18:31:50 GMT",
+	"Etag": ""2b2-5004aa6d35180"",
+	"kCFURLHTTPStatusCode": 200,
+	"Accept-Ranges": "bytes",
+	"Date": "Wed, 19 Jul 2017 17:18:09 GMT",
+	"kCFURLHTTPStatusLine": "HTTP/1.1 200 OK",
+	"Content-Length": "690",
+	"Connection": "close"
+}
+---- Data:
+
+<meta http-equiv="content-type" content="text/html;charset=ISO-8859-1">
+<title>Welcome to Dave Cotter dot com</title>
+
+
+<body background="index_resources/background.jpg" bgcolor="silver" text="#6f0972">
+	<div align="center">
+		<font size="+2">
+			<a href="./comic-con-2014/">Comic-Con 2014</a><br>
+			<a href="http://kjams.com">kJams</a> My Karaoke Software<br>
+			<br>
+			<a href="https://www.facebook.com/David.M.Cotter">Facebook</a><br>
+			<a href="https://twitter.com/kjams_karaoke">Twitter</a><br>
+			<a href="https://www.linkedin.com/in/davidmcotter">LinkedIn</a><br>
+			<br>
+			For my other stuff, visit <a href="http://lazilong.com">lazilong.com</a><br>
+		</font>
+	</div>
+</body>
+
+---- End:
+------------------SSL download---------------
+PASS: SSL download
+---- Data:
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>build</key>
+	<integer>49</integer>
+	<key>dot</key>
+	<integer>0</integer>
+	<key>major</key>
+	<integer>1</integer>
+	<key>minor</key>
+	<integer>0</integer>
+	<key>roguebuild</key>
+	<integer>36</integer>
+	<key>stage</key>
+	<integer>32</integer>
+</dict>
+</plist>
+---- End:
+------------------TLS 1.0 download---------------
+PASS: TLS1.0 download
+---- Data:
+<html>
+<head><title>404 Not Found</title></head>
+<body bgcolor="white">
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx/1.10.3 (Ubuntu)</center>
+</body>
+</html>
+---- End:
+------------------TLS 1.1 download---------------
+PASS: TLS1.1 download
+---- Data:
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: gray;
+  display: flex;
+  flex-direction: column;
+}
+
+#content {
+  text-align: center;
+
+  /* Fill the entire height of the page above the footer. */
+  flex: 1;
+
+  /* Center child items */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#content h1 {
+  margin: 0em auto;
+  color: white;
+  font-weight: bold;
+  font-family: "Source Code Pro", Monaco, Consolas, "Courier New", monospace, Impact;
+  font-size: 7vw;
+  text-shadow:
+    0 0 20px rgba(255, 255, 255, 0.5),
+    0 0 40px rgba(255, 255, 255, 0.5),
+    0 0 60px rgba(255, 255, 255, 0.5);
+}
+
+#content img.mixed {
+  width: 20vh;
+  max-width: 256;
+  margin-top: 5vh;
+}
+
+#content input {
+  min-width: 15em;
+}
+
+#content input, button {
+  text-align: center;
+  font-size: 2vw;
+}
+
+#footer {
+  padding: 2vh 2vw;
+  background: rgba(0, 0, 0, 0.25);
+  color: white;
+  text-align: center;
+  font-family: Helvetica, Tahoma, sans-serif;
+  font-size: 3vw;
+
+  /* Size based on content */
+  flex: 0 0 content;
+}
+
+#footer a {
+  color: white;
+  transition: all 150ms;
+}
+
+#footer a:hover {
+  text-shadow:
+    0px 0px 20px rgba(255, 255, 255, 0.5),
+    0px 0px 40px rgba(255, 255, 255, 0.5),
+    0px 0px 60px rgba(255, 255, 255, 0.5);
+}
+
+#footer #http-vs-https {
+  height: 1.5em;
+  vertical-align: middle;
+}---- End:
+------------------redirect---------------
+PASS: redirect
+---- Data:
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>build</key>
+	<integer>27</integer>
+	<key>dot</key>
+	<integer>2</integer>
+	<key>major</key>
+	<integer>1</integer>
+	<key>minor</key>
+	<integer>0</integer>
+	<key>roguebuild</key>
+	<integer>0</integer>
+	<key>stage</key>
+	<integer>96</integer>
+	<key>stageStr</key>
+	<string>b</string>
+</dict>
+</plist>
+---- End:
+------------------complex download SMALL with redirect---------------
+CFHTTPMessage:
+<CFHTTPMessageRef 0x1006375c0(0x1006375d0)> { GET request, url http://dl.dropbox.com/u/195957/kJams/version.xml }
+http://dl.dropbox.com GET /u/195957/kJams/version.xml HTTP/1.1
+Connection: close
+
+
+no bytes, but not end. event type: 1
+no header yet: getting now
+http://dl.dropbox.com/u/195957/kJams/version.xml
+CFDictionary:
+{
+	"Content-Type": "application/xml",
+	"x-content-security-policy": "referrer no-referrer",
+	"Pragma": "public",
+	"content-security-policy": "referrer no-referrer",
+	"X-Server-Response-Time": "252",
+	"Set-Cookie": "uc_session=QZ7yPCkX8VUONeu5v3XmaTfK2Lo7HGykAbUvqDHdjJGoEHQkWuW0gk0zjB0Qn6Ao; Domain=dropboxusercontent.com; httponly; Path=/; secure",
+	"Server": "nginx",
+	"Content-Disposition": "inline; filename="version.xml"; filename*=UTF-8''version.xml",
+	"referrer-policy": "no-referrer",
+	"x-webkit-csp": "referrer no-referrer",
+	"Cache-Control": "max-age=0",
+	"Date": "Wed, 19 Jul 2017 17:18:11 GMT",
+	"x-robots-tag": "noindex, nofollow, noimageindex",
+	"Content-Length": "494",
+	"x-dropbox-request-id": "ba74cefe6e73facbe19ac6fbed01adf5",
+	"Connection": "close",
+	"Accept-Ranges": "bytes",
+	"Vary": "Accept-Encoding",
+	"Etag": "55546756n"
+}
+bytesAvailB && !i_got_download_sizeB
+sizeL = 494
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>build</key>
+	<integer>27</integer>
+	<key>dot</key>
+	<integer>2</integer>
+	<key>major</key>
+	<integer>1</integer>
+	<key>minor</key>
+	<integer>0</integer>
+	<key>roguebuild</key>
+	<integer>0</integer>
+	<key>stage</key>
+	<integer>96</integer>
+	<key>stageStr</key>
+	<string>b</string>
+</dict>
+</plist>
+
+finished reading stream
+net completion called
+PASS: complex download SMALL
+PASS: complex download SMALL: got all data
+Deleting HTTP for: http://dl.dropbox.com/u/195957/kJams/version.xml
+There was no NET thread to kill
+------------------complex download LARGE with redirect---------------
+CFHTTPMessage:
+<CFHTTPMessageRef 0x100653590(0x1006535a0)> { GET request, url http://dl.dropbox.com/u/195957/kJams/kJams2.zip }
+http://dl.dropbox.com GET /u/195957/kJams/kJams2.zip HTTP/1.1
+Connection: close
+
+
+no bytes, but not end. event type: 1
+no header yet: getting now
+http://dl.dropbox.com/u/195957/kJams/kJams2.zip
+CFDictionary:
+{
+	"Content-Type": "application/zip",
+	"x-content-security-policy": "referrer no-referrer",
+	"Pragma": "public",
+	"content-security-policy": "referrer no-referrer",
+	"X-Server-Response-Time": "418",
+	"Set-Cookie": "uc_session=aT8C7NCgxT49IBatc2YBCp1ZvykUmu3GjARce2CBuR564uHR6y1A6iGvzaLEViF2; Domain=dropboxusercontent.com; httponly; Path=/; secure",
+	"Server": "nginx",
+	"Content-Disposition": "inline; filename="kJams2.zip"; filename*=UTF-8''kJams2.zip",
+	"referrer-policy": "no-referrer",
+	"x-webkit-csp": "referrer no-referrer",
+	"Cache-Control": "max-age=0",
+	"Date": "Wed, 19 Jul 2017 17:18:12 GMT",
+	"x-robots-tag": "noindex, nofollow, noimageindex",
+	"Content-Length": "13283157",
+	"x-dropbox-request-id": "d5a31d419da9db748eeb5e769e607c6c",
+	"Connection": "close",
+	"Accept-Ranges": "bytes",
+	"Etag": "55546763n"
+}
+bytesAvailB && !i_got_download_sizeB
+sizeL = 13283157
+finished reading stream
+net completion called
+PASS: complex download LARGE
+PASS: complex download LARGE: got all data
+Deleting HTTP for: http://dl.dropbox.com/u/195957/kJams/kJams2.zip
+There was no NET thread to kill
+------------------get date header SSL---------------
+PASS: get date header SSL
+Wednesday, August 27, 2008 - 11:02 PM PDT
+------------------upload to freedb---------------
+CFURL:
+<CFURL 0x103000c10 [0x7fff99a7dda0]>{string = file:///Users/davec/Developer/depot/CFTest/project/mac_xcode/build/Debug/, encoding = 134217984, base = (null)}
+URL: file:///Users/davec/Developer/depot/CFTest/test_data/freedb.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Category</key>
+	<string>misc</string>
+	<key>Charset</key>
+	<string>UTF-8</string>
+	<key>Content-Length</key>
+	<string>328</string>
+	<key>Discid</key>
+	<string>14026e02</string>
+	<key>Submit-Mode</key>
+	<string>test</string>
+	<key>User-Email</key>
+	<string>me@davecotter.com</string>
+	<key>X-Cddbd-Note</key>
+	<string>Sent with kJams 1.0d52r41</string>
+	<key>bodyStr</key>
+	<string># xmcd
+#
+# Track frame offsets:
+#	150
+#	20996
+#
+# Disc length: 624
+#
+# Revision: 1
+# Submitted via: kJams Pro (development) 1.0patch52.41
+#
+DISCID=14026e02
+DTITLE=Various / Untitled Playlist
+DYEAR=2007
+DGENRE=Karaoke
+TTITLE0=U2 / Electrical Storm
+TTITLE1=U2 / All I Want Is You
+EXTD=
+EXTT0=
+EXTT1=
+PLAYORDER=</string>
+	<key>urlStr</key>
+	<string>http://freedb.freedb.org:80/~cddb/submit.cgi</string>
+</dict>
+</plist>
+
+PASS: load freedb.plist
+CFHTTPMessage:
+<CFHTTPMessageRef 0x1003079f0(0x100307a00)> { POST request, url http://freedb.freedb.org:80/~cddb/submit.cgi }
+http://freedb.freedb.org POST /~cddb/submit.cgi HTTP/1.1
+Discid: 14026e02
+Submit-Mode: test
+Category: misc
+User-Email: me@davecotter.com
+Charset: UTF-8
+Content-Length: 328
+X-Cddbd-Note: Sent with kJams 1.0d52r41
+Connection: close
+
+# xmcd
+#
+# Track frame offsets:
+#	150
+#	20996
+#
+# Disc length: 624
+#
+# Revision: 1
+# Submitted via: kJams Pro (development) 1.0patch52.41
+#
+DISCID=14026e02
+DTITLE=Various / Untitled Playlist
+DYEAR=2007
+DGENRE=Karaoke
+TTITLE0=U2 / Electrical Storm
+TTITLE1=U2 / All I Want Is You
+EXTD=
+EXTT0=
+EXTT1=
+PLAYORDER=
+PASS: upload send
+no bytes, but not end. event type: 1
+no header yet: getting now
+http://freedb.freedb.org:80/~cddb/submit.cgi
+CFDictionary:
+{
+	"Transfer-Encoding": "Identity",
+	"Content-Type": "text/html; charset=ISO-8859-1",
+	"Connection": "close",
+	"Server": "Apache/2.0.54 (Debian GNU/Linux)",
+	"Date": "Wed, 19 Jul 2017 17:18:13 GMT"
+}
+bytesAvailB && !i_got_download_sizeB
+finished reading stream
+net completion called
+PASS: upload completion
+PASS: upload reply
+200 OK, submission has been sent.
+
+Deleting HTTP for: http://freedb.freedb.org:80/~cddb/submit.cgi
+There was no NET thread to kill
+----------------CFNetwork Tests Ended-------------
+Program ended with exit code: 0

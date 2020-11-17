@@ -1,0 +1,350 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		750594240E37EB1300FECF44 /* CFUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 750594230E37EB1300FECF44 /* CFUtils.cpp */; };
+		752EDDE3151A8B9600E25DBF /* CCFData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 752EDDE2151A8B9600E25DBF /* CCFData.cpp */; };
+		752FB6B3176BADFC000F2C78 /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 752FB6B2176BADFC000F2C78 /* ApplicationServices.framework */; };
+		752FB6BB176BAE12000F2C78 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 752FB6BA176BAE12000F2C78 /* CoreFoundation.framework */; };
+		753F2BB819AF9A750054E377 /* CFTestUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 753F2BB719AF9A750054E377 /* CFTestUtils.cpp */; };
+		755E31490E1810450069CB0E /* SuperString.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 755E31460E1810450069CB0E /* SuperString.cpp */; };
+		755E31640E1813310069CB0E /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 755E31630E1813310069CB0E /* main.cpp */; };
+		755EE86B18C924D500C8B05B /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 755EE86A18C924D500C8B05B /* Carbon.framework */; };
+		7571958815201848002589A2 /* CFNetworkAddress.c in Sources */ = {isa = PBXBuildFile; fileRef = 7571958715201848002589A2 /* CFNetworkAddress.c */; };
+		758EFDBD151673D800F78F3F /* CFBonjour.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 758EFDBC151673D800F78F3F /* CFBonjour.cpp */; };
+		758EFE9C15170B7100F78F3F /* CNetHTTP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 758EFE9A15170B7100F78F3F /* CNetHTTP.cpp */; };
+		75B619391AB0F0910078CC1D /* CCFError.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75B619371AB0F0910078CC1D /* CCFError.cpp */; };
+		75CFC3AB0E181B2900F15957 /* CFTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75CFC3AA0E181B2900F15957 /* CFTest.cpp */; };
+		75D277BB14BD6FF10042AAFD /* CFNetworkTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75D277B914BD6FF10042AAFD /* CFNetworkTest.cpp */; };
+		75D277BC14BD6FF10042AAFD /* CWebServerTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75D277BA14BD6FF10042AAFD /* CWebServerTest.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8DD76F7B0486A8DE00D96B5E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		750594230E37EB1300FECF44 /* CFUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFUtils.cpp; path = shared/CFUtils.cpp; sourceTree = "<group>"; };
+		7509C9771279F30000176FB1 /* stdafx.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = stdafx.h; path = headers/stdafx.h; sourceTree = "<group>"; };
+		75121683151941B3009E6C17 /* CCFData.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CCFData.h; path = shared/CCFData.h; sourceTree = "<group>"; };
+		7529FFCD1F0AE0F800FD85E6 /* CFTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CFTest.h; path = main/CFTest.h; sourceTree = "<group>"; };
+		7529FFCE1F0AE10800FD85E6 /* CWebServerTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CWebServerTest.h; path = main/CWebServerTest.h; sourceTree = "<group>"; };
+		7529FFCF1F0AE11800FD85E6 /* CNetHTTP.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CNetHTTP.h; path = shared/CNetHTTP.h; sourceTree = "<group>"; };
+		752EDDE2151A8B9600E25DBF /* CCFData.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CCFData.cpp; path = shared/CCFData.cpp; sourceTree = "<group>"; };
+		752FB6B2176BADFC000F2C78 /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
+		752FB6BA176BAE12000F2C78 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		753F2BB719AF9A750054E377 /* CFTestUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFTestUtils.cpp; path = main/CFTestUtils.cpp; sourceTree = "<group>"; };
+		753F2C6819AFCFE50054E377 /* CFTestUtils.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CFTestUtils.h; path = main/CFTestUtils.h; sourceTree = "<group>"; };
+		755B02EE1F128BE5009C8220 /* CFBonjour.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CFBonjour.h; path = shared/CFBonjour.h; sourceTree = "<group>"; };
+		755B02F31F128BE5009C8220 /* SuperString.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = SuperString.h; path = shared/SuperString.h; sourceTree = "<group>"; };
+		755B02F61F128BF1009C8220 /* CFNetworkTest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CFNetworkTest.h; path = main/CFNetworkTest.h; sourceTree = "<group>"; };
+		755E31460E1810450069CB0E /* SuperString.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = SuperString.cpp; path = shared/SuperString.cpp; sourceTree = "<group>"; };
+		755E31630E1813310069CB0E /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = main.cpp; path = main/main.cpp; sourceTree = "<group>"; };
+		755EE86A18C924D500C8B05B /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
+		7571958715201848002589A2 /* CFNetworkAddress.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = CFNetworkAddress.c; path = ../../CF/CFNetwork/NetServices/CFNetworkAddress.c; sourceTree = "<group>"; };
+		758EFDBC151673D800F78F3F /* CFBonjour.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFBonjour.cpp; path = shared/CFBonjour.cpp; sourceTree = "<group>"; };
+		758EFE9A15170B7100F78F3F /* CNetHTTP.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CNetHTTP.cpp; path = shared/CNetHTTP.cpp; sourceTree = "<group>"; };
+		75991A2921CC62470023F62E /* CFMacTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CFMacTypes.h; path = shared/CFMacTypes.h; sourceTree = "<group>"; };
+		75B619371AB0F0910078CC1D /* CCFError.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CCFError.cpp; path = shared/CCFError.cpp; sourceTree = "<group>"; };
+		75B619381AB0F0910078CC1D /* CCFError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CCFError.h; path = shared/CCFError.h; sourceTree = "<group>"; };
+		75B6D57C1F0B25AD008F5ADB /* CFUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CFUtils.h; path = shared/CFUtils.h; sourceTree = "<group>"; };
+		75CFC3AA0E181B2900F15957 /* CFTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFTest.cpp; path = main/CFTest.cpp; sourceTree = "<group>"; };
+		75D277B914BD6FF10042AAFD /* CFNetworkTest.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFNetworkTest.cpp; path = main/CFNetworkTest.cpp; sourceTree = "<group>"; };
+		75D277BA14BD6FF10042AAFD /* CWebServerTest.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CWebServerTest.cpp; path = main/CWebServerTest.cpp; sourceTree = "<group>"; };
+		8DD76F7E0486A8DE00D96B5E /* CFTest Debug */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "CFTest Debug"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8DD76F780486A8DE00D96B5E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				752FB6B3176BADFC000F2C78 /* ApplicationServices.framework in Frameworks */,
+				752FB6BB176BAE12000F2C78 /* CoreFoundation.framework in Frameworks */,
+				755EE86B18C924D500C8B05B /* Carbon.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		08FB7794FE84155DC02AAC07 /* CFTest */ = {
+			isa = PBXGroup;
+			children = (
+				08FB7795FE84155DC02AAC07 /* Source */,
+				08FB779DFE84155DC02AAC07 /* External Frameworks and Libraries */,
+				19C28FBDFE9D53C911CA2CBB /* Products */,
+			);
+			name = CFTest;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				755B02F71F128C31009C8220 /* headers */,
+				756773B71979023900A7E2F9 /* CoreFoundation */,
+				758EFE9A15170B7100F78F3F /* CNetHTTP.cpp */,
+				753F2BB719AF9A750054E377 /* CFTestUtils.cpp */,
+				75D277BA14BD6FF10042AAFD /* CWebServerTest.cpp */,
+				75D277B914BD6FF10042AAFD /* CFNetworkTest.cpp */,
+				75CFC3AA0E181B2900F15957 /* CFTest.cpp */,
+				755E31630E1813310069CB0E /* main.cpp */,
+			);
+			name = Source;
+			path = ../../source;
+			sourceTree = "<group>";
+		};
+		08FB779DFE84155DC02AAC07 /* External Frameworks and Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				755EE86A18C924D500C8B05B /* Carbon.framework */,
+				752FB6BA176BAE12000F2C78 /* CoreFoundation.framework */,
+				752FB6B2176BADFC000F2C78 /* ApplicationServices.framework */,
+			);
+			name = "External Frameworks and Libraries";
+			sourceTree = "<group>";
+		};
+		19C28FBDFE9D53C911CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8DD76F7E0486A8DE00D96B5E /* CFTest Debug */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		755B02F71F128C31009C8220 /* headers */ = {
+			isa = PBXGroup;
+			children = (
+				7509C9771279F30000176FB1 /* stdafx.h */,
+				755B02F61F128BF1009C8220 /* CFNetworkTest.h */,
+				755B02EE1F128BE5009C8220 /* CFBonjour.h */,
+				755B02F31F128BE5009C8220 /* SuperString.h */,
+				75B619381AB0F0910078CC1D /* CCFError.h */,
+				75121683151941B3009E6C17 /* CCFData.h */,
+				75991A2921CC62470023F62E /* CFMacTypes.h */,
+				75B6D57C1F0B25AD008F5ADB /* CFUtils.h */,
+				7529FFCF1F0AE11800FD85E6 /* CNetHTTP.h */,
+				753F2C6819AFCFE50054E377 /* CFTestUtils.h */,
+				7529FFCE1F0AE10800FD85E6 /* CWebServerTest.h */,
+				7529FFCD1F0AE0F800FD85E6 /* CFTest.h */,
+			);
+			name = headers;
+			sourceTree = "<group>";
+		};
+		756773B71979023900A7E2F9 /* CoreFoundation */ = {
+			isa = PBXGroup;
+			children = (
+				758EFDBC151673D800F78F3F /* CFBonjour.cpp */,
+				75B619371AB0F0910078CC1D /* CCFError.cpp */,
+				752EDDE2151A8B9600E25DBF /* CCFData.cpp */,
+				750594230E37EB1300FECF44 /* CFUtils.cpp */,
+				7571958715201848002589A2 /* CFNetworkAddress.c */,
+				755E31460E1810450069CB0E /* SuperString.cpp */,
+			);
+			name = CoreFoundation;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8DD76F740486A8DE00D96B5E /* CFTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB924708733DCA0010E9CD /* Build configuration list for PBXNativeTarget "CFTest" */;
+			buildPhases = (
+				8DD76F760486A8DE00D96B5E /* Sources */,
+				8DD76F780486A8DE00D96B5E /* Frameworks */,
+				8DD76F7B0486A8DE00D96B5E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CFTest;
+			productInstallPath = "$(HOME)/bin";
+			productName = CFTest;
+			productReference = 8DD76F7E0486A8DE00D96B5E /* CFTest Debug */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0940;
+			};
+			buildConfigurationList = 1DEB924B08733DCA0010E9CD /* Build configuration list for PBXProject "CFTest" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 08FB7794FE84155DC02AAC07 /* CFTest */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8DD76F740486A8DE00D96B5E /* CFTest */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8DD76F760486A8DE00D96B5E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				755E31490E1810450069CB0E /* SuperString.cpp in Sources */,
+				755E31640E1813310069CB0E /* main.cpp in Sources */,
+				75CFC3AB0E181B2900F15957 /* CFTest.cpp in Sources */,
+				750594240E37EB1300FECF44 /* CFUtils.cpp in Sources */,
+				75D277BB14BD6FF10042AAFD /* CFNetworkTest.cpp in Sources */,
+				75D277BC14BD6FF10042AAFD /* CWebServerTest.cpp in Sources */,
+				758EFDBD151673D800F78F3F /* CFBonjour.cpp in Sources */,
+				75B619391AB0F0910078CC1D /* CCFError.cpp in Sources */,
+				758EFE9C15170B7100F78F3F /* CNetHTTP.cpp in Sources */,
+				752EDDE3151A8B9600E25DBF /* CCFData.cpp in Sources */,
+				7571958815201848002589A2 /* CFNetworkAddress.c in Sources */,
+				753F2BB819AF9A750054E377 /* CFTestUtils.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB924808733DCA0010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		1DEB924908733DCA0010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		1DEB924C08733DCA0010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"OPT_MACOS=1",
+					_CFTEST_,
+					_JUST_CFTEST_,
+					_MIN_CF_,
+					kDEBUG,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../../../kJams/External/boost_1_40_0,
+					../../../CF/CFNetwork/include/CFNetwork,
+					/usr/local/include,
+					../../source/headers,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				PREBINDING = NO;
+				PRODUCT_NAME = "CFTest Debug";
+			};
+			name = Debug;
+		};
+		1DEB924D08733DCA0010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"OPT_MACOS=1",
+					_CFTEST_,
+					_JUST_CFTEST_,
+					_MIN_CF_,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../../../kJams/External/boost_1_40_0,
+					../../../CF/CFNetwork/include/CFNetwork,
+					/usr/local/include,
+					../../source/headers,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				PREBINDING = NO;
+				PRODUCT_NAME = CFTest;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB924708733DCA0010E9CD /* Build configuration list for PBXNativeTarget "CFTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB924808733DCA0010E9CD /* Debug */,
+				1DEB924908733DCA0010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB924B08733DCA0010E9CD /* Build configuration list for PBXProject "CFTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB924C08733DCA0010E9CD /* Debug */,
+				1DEB924D08733DCA0010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}

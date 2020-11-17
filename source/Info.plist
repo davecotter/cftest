@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>com.cflite.cftest</string>
+	<key>CFBundleName</key>
+	<string>CFTest Debug</string>
+	<key>CFBundleGetInfoString</key>
+	<string>CFTest Debug 1.0d1, © 2010 by David M. Cotter</string>
+	<key>CFBundleShortVersionString</key>
+	<string>CFTest Debug 1.0d1</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>cfts</string>
+	<key>CFBundleExecutable</key>
+	<string>CFTest Debug</string>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>LSRequiresCarbon</key>
+	<true/>
+	<key>CFBundleIconFile</key>
+	<string>CFTest</string>
+	<key>LSMultipleInstancesProhibited</key>
+	<true/>
+</dict>
+</plist>

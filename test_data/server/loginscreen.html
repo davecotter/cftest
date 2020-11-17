@@ -1,0 +1,102 @@
+<html>
+	<head>
+		<title>kJams Login</title>
+		
+		<script src="common.js"></script>
+		<script src="./spry/xpath.js"></script>
+		<script src="./spry/SpryData.js"></script>
+		<script src="data.js"></script>
+
+		<script type="text/javascript">
+			function iPhoneAlert() {
+
+				if ((navigator.userAgent.match(/iPhone/i)) || (navigator.userAgent.match(/iPod/i))) {
+					var question = confirm("You need iJams to log in!")
+
+					if (question) {
+						window.location = "http://itunes.apple.com/WebObjects/MZStore.woa/wa/viewSoftware?id=301301004&mt=8";
+					}
+				}
+			}
+		</script>
+		
+		<style type="text/css">
+			#main {
+				width: 400px;
+				margin-left: auto;
+				margin-right: auto;
+				text-align: center;
+				background: url('metal.jpg');
+				border-style: solid;
+				border-color: #000000;
+				border-width: 1px;
+			}
+			
+			#main p {
+				font-size: 24pt;
+			}
+			
+			#main table {
+				margin-left: auto;
+				margin-right: auto;
+			}
+			
+			#main img {
+				margin-bottom: 10px;
+			}
+		</style>
+	</head>
+	
+	<body onLoad="iPhoneAlert();">
+		<div id="main">
+			<p>Singer Login</p>
+			<img src="kjams.png" />
+			<form id="form" method="POST" action="">
+				<table>
+					<tr><td>Singer: </td><td id="singers">Please wait...</td></tr>
+					<tr><td>Password: </td><td><input type="password" name="password"></td></tr>
+					<tr><th colspan="2"><input type="submit"  name="submit" value="Login" /> <input type="button" onClick="goNewSinger();" value="New Singer" /></th></tr>
+				</table>
+			</form>
+			<div>[ <a id="helplink" href="">Help</a> ]</div><br />
+		</div>
+		
+		<script language="javascript">
+			document.getElementById("form").action = url_main;
+			document.getElementById("helplink").href = url_help;
+			
+			getSingers(url_singers, populateSingers);
+			function populateSingers(singers) {
+				var selectObj	= document.createElement("SELECT");
+				var optgroupObj	= document.createElement("OPTGROUP");
+				
+				selectObj.name = "singer";
+				selectObj.style.width = "100%";
+				
+				optgroupObj.label = "";
+				
+				for (var i = 0; i < singers.length; i++) {
+					if (singers[i]['name'][0].toUpperCase() != optgroupObj.label) {
+						optgroupObj			= document.createElement("OPTGROUP");
+						optgroupObj.label	= singers[i]['name'][0].toUpperCase();
+						
+						selectObj.appendChild(optgroupObj);
+					}
+					
+					var optionObj = document.createElement("OPTION");
+					optionObj.value = singers[i]['id'];
+					optionObj.innerHTML = singers[i]['name'];
+					optgroupObj.appendChild(optionObj);
+				}
+				
+				document.getElementById("singers").innerHTML = "";
+				document.getElementById("singers").appendChild(selectObj);
+			}
+			
+			function goNewSinger() {
+				window.location = url_newsinger;
+			}
+			
+		</script>
+	</body>
+</html>

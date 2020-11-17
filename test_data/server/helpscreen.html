@@ -1,0 +1,106 @@
+<html>
+	<head>
+		<title>kJams Help</title>
+		
+		<script src="common.js"></script>
+		
+		<style type="text/css">
+			#main {
+				margin-left: auto;
+				margin-right: auto;
+				text-align: center;
+				background: url('metal.jpg');
+				width: 600px;
+				border-style: solid;
+				border-color: #000000;
+				border-width: 1px;
+				padding-top: 5px;
+				padding-bottom: 5px;
+			}
+			
+			#title {
+				font-size: 24pt;
+			}
+			
+			#content {
+				margin-top: 10px;
+				margin-bottom: 10px;
+				margin-left: auto;
+				margin-right: auto;
+				width: 570px;
+				background-color: #FFFFFF;
+				height: 400px;
+				overflow: auto;
+				border-style: solid;
+				border-color: #999999;
+				border-width: 1px;
+				text-align: left;
+				padding: 5px;
+			}
+			
+			#content .header {
+				font-size: 18pt;
+				font-weight: bold;
+				text-decoration: underline;
+				margin-bottom: 0px;
+			}
+			
+			#content a {
+				color: #0000FF;
+				text-decoration: none;
+			}
+			
+			#content a:hover {
+				font-style: italic;
+			}
+			
+			#content img {
+				border-style: solid;
+				border-color: #000000;
+				border-width: 1px;
+				padding: 3px;
+			}
+			
+		</style>
+	</head>
+	
+	<body>
+		<div id="main">
+			<div id="title">Help</div>
+			<div id="content">
+				<p class="header">Contents</p>
+				<p>
+					1. <a href="#introduction">Introduction</a><br />
+					2. <a href="#playlists">Browsing Playlists</a><br />
+					3. <a href="#searching">Accessing and Searching the Library</a><br />
+					4. <a href="#adding">Adding Songs to Your Playlists</a><br />
+					5. <a href="#arranging">Arranging Songs Within Your Playlists</a><br />
+					6. <a href="#removing">Removing Songs From Your Playlists</a><br />
+					7. <a href="#more">More kJams Help and Information</a><br />
+				</p>
+				
+				<a name="introduction"></a><p class="header">1. Introduction</a></p>
+				<p>Welcome to the kJams web interface! This applications allows you to choose and organize the songs you wish to sing tonight. Create a new singer account or login to an account your've already created and you're ready to go! Once you've logged in, start by entering a search and dragging songs you want into your <i>Tonight</i> playlist.<br /><center><img src="help-intro.jpg" /></center></p>
+				
+				<a name="playlists"></a><p class="header">2. Browsing Playlists</a></p>
+				<p>To view songs in a playlist, simply click the playlist; the songs will then laod in the main window. You can then drag to rearrange them (except in <i>History</i>, and <i>Library</i>) as well as add them to your <i>Tonight</i> or other playlists. You can also change the pitch of songs in your <i>Tonight</i> playlist.<br /><center><img src="help-browsing.jpg" /></center></p>
+				
+				<a name="searching"></a><p class="header">3. Accessing and Searching the Library</a></p>
+				<p>Before you can view songs in the <i>Library</i>, you need to enter a search to avoid getting back huge song lists. Up at the top, you should see a field labled "Search Library." Enter part of song title, artist, or album and press Go. Your search results will appear in the main window and you can then drag them into your playlists.<br /><center><img src="help-searching.jpg" /></center></p>
+				
+				<a name="adding"></a><p class="header">4. Adding Songs to Your Playlists</a></p>
+				<p>You can add songs to any of your playlists except <i>History</i> and <i>Library</i>. To do so, simply click and drag the song over to the playlist you want and release the mouse button. For the <i>Tonight</i> and <i>Favorites</i> playlists, you can click the "Tonight" and "Favorites" buttons in the main window.<br /><center><img src="help-adding.jpg" /></center></p>
+				
+				<a name="arranging"></a><p class="header">5. Arranging Songs Within Your Playlists</a></p>
+				<p>To rearrange the order of songs in any of your playlists (except <i>History</i> and <i>Library</i>), simply click and drag a song to a new spot in the list and release the mouse button.</p>
+				
+				<a name="removing"></a><p class="header">6. Removing Songs From Your Playlists</a></p>
+				<p>To remove a song from any of your playlists (except <i>History</i> and <i>Library</i>), select the song you wish to remove, and press Del on the keyboard (usually fn + Delete on laptop keyboards).</p>
+				
+				<a name="more"></a><p class="header">7. More kJams Help and Information</a></p>
+				<p>For more about kJams, visit the wiki at <a href="http://www.kjams.com/wiki/" target="_blank">www.kjams.com/wiki/</a>.
+			</div>
+			<div id="back"><input type="button" value="Back" onClick="window.location = url_main;" /></div>
+		</div>
+	</body>
+</html>

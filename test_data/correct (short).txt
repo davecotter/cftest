@@ -1,0 +1,53 @@
+--------------------New CFTest Log----------------
+PASS: 64bit CFTest
+PASS: Dictionary Ptr
+PASS: String Ptr
+PASS: Convert to/from DataRef
+PASS: Containment
+PASS: Replacement
+PASS: Diacritic Sensitive
+PASS: Diacritic Insensitive
+PASS: Compare Less
+PASS: Compare Greater
+PASS: Compare Equal
+PASS: Encoding Conversion
+PASS: Encoding to Codepage
+PASS: Codepage to Encoding
+PASS: Convert IANA CharSet To Encoding
+PASS: Convert Locale to Lang ID: “English”
+PASS: Convert Locale to Lang ID: “French”
+PASS: Convert Locale to Lang ID: “German”
+PASS: Convert Locale to Lang ID: “Portuguese”
+PASS: Preferred Language Match
+PASS: Getting Bundle
+PASS: Getting Bundle URL
+PASS: Getting PList URL
+PASS: Reading PList file
+PASS: Writing PList file
+PASS: Getting XML URL
+PASS: Reading XML file
+------------------CFTest Tests Ended--------------
+------------------New CFNetwork Log---------------
+PASS: Allocate Bonjour
+PASS: Bonjour Server
+PASS: Bonjour Browser START
+PASS: Bonjour Browser FINISH
+PASS: Bonjour: Name -> Addr: IPv4
+PASS: Bonjour: Addr -> Name: IPv4
+PASS: Bonjour: Name -> Addr: IPv6
+PASS: Bonjour: Addr -> Name: IPv6
+PASS: Simple download
+PASS: SSL download
+PASS: TLS1.0 download
+PASS: TLS1.1 download
+PASS: redirect
+PASS: complex download SMALL
+PASS: complex download SMALL: got all data
+PASS: complex download LARGE
+PASS: complex download LARGE: got all data
+PASS: get date header SSL
+PASS: load freedb.plist
+PASS: upload send
+PASS: upload completion
+PASS: upload reply
+----------------CFNetwork Tests Ended-------------

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Category</key>
+	<string>misc</string>
+	<key>Charset</key>
+	<string>UTF-8</string>
+	<key>Content-Length</key>
+	<string>328</string>
+	<key>Discid</key>
+	<string>14026e02</string>
+	<key>Submit-Mode</key>
+	<string>test</string>
+	<key>User-Email</key>
+	<string>me@davecotter.com</string>
+	<key>X-Cddbd-Note</key>
+	<string>Sent with kJams 1.0d52r41</string>
+	<key>bodyStr</key>
+	<string># xmcd
+#
+# Track frame offsets:
+#	150
+#	20996
+#
+# Disc length: 624
+#
+# Revision: 1
+# Submitted via: kJams Pro (development) 1.0patch52.41
+#
+DISCID=14026e02
+DTITLE=Various / Untitled Playlist
+DYEAR=2007
+DGENRE=Karaoke
+TTITLE0=U2 / Electrical Storm
+TTITLE1=U2 / All I Want Is You
+EXTD=
+EXTT0=
+EXTT1=
+PLAYORDER=</string>
+	<key>urlStr</key>
+	<string>http://freedb.freedb.org:80/~cddb/submit.cgi</string>
+</dict>
+</plist>

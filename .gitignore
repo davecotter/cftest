@@ -1,0 +1,20 @@
+.DS_Store
+project/mac_xcode/DerivedData
+project/mac_xcode/build
+project/mac_xcode/CFTest.xcodeproj/project.xcworkspace/xcuserdata
+project/mac_xcode/CFTest.xcodeproj/xcuserdata
+project/qt/CFTest/mac_64-CFTest
+project/qt/CFTest/mac_64-CFTest Debug
+project/qt/CFTest/win_32-CFTest Debug
+project/qt/CFTest/win_64-CFTest Debug
+project/qt/build
+project/win_vs/.vs
+project/win_vs/Debug
+project/win_vs/Release
+project/win_vs/build
+project/win_vs/CFTest.ncb
+project/win_vs/CFTest.suo
+project/win_vs/CFTest.vcproj.THEIA-PC.davec.user
+project/win_vs/CFTest.vcxproj.filters
+project/win_vs/CFTest.vcxproj.user
+project/win_vs/UpgradeLog.htm

@@ -1,0 +1,276 @@
+<html>
+	<head>
+		<title>kJams Server</title>
+	
+		<script src="spry/xpath.js"></script>
+		<script src="spry/SpryData.js"></script>
+		<script src="ui.js"></script>
+		<script src="data.js"></script>
+		<script src="main.js"></script>
+		<script src="common.js"></script>
+		
+		<style type="text/css">
+			#main {
+				padding: 10px;
+				margin-right: 20px;
+				margin-left: 20px;
+				border-style: solid;
+				border-color: #000000;
+				border-width: 1px;
+				background: url('metal.jpg');
+				cursor: default;
+			}
+			
+			#title {
+				padding-right: 30px;
+				text-align: left;
+				font-family: Arial Black;
+				font-size: 24pt;
+				font-weight: bold;
+				margin-bottom: 5px;
+			}
+			
+			#search {
+				width: 100%;
+				text-align: center;
+			}
+			
+			#searchfield {
+				height: 21px;
+				width: 144px;
+				background: url('search.png');
+				border-width: 0px;
+				padding-left: 7px;
+				padding-right: 7px;
+				padding-top: 2px;
+			}
+			
+			#left {
+				float: left;
+				width: 200px;
+				margin: 10px;
+				margin-left: 0px;
+			}
+			
+			#status {
+				text-align: center;
+				color: #333333;
+				padding: 0px;
+				margin: 0px;
+			}
+			
+			#playlists .KJList {
+				overflow: auto;
+				height: 240px;
+				padding: 0px;
+				background-color: #FFFFFF;
+				border-style: solid;
+				border-color: #999999;
+				border-width: 1px;
+				padding: 0px;
+			}
+			
+			#playlists .KJList td {
+				padding: 0px;
+				margin: 0px;
+			}
+			
+			#playlists .KJList table {
+				margin: 0px;
+				padding: 0px;
+			}
+			
+			#photo {
+				padding: 3px;
+				width: 190px;
+				height: 143px;
+				max-height: 150px;
+				overflow: hidden;
+				margin-top: 5px;
+				background-color: #FFFFFF;
+				border-style: solid;
+				border-color: #999999;
+				border-width: 1px;
+			}
+			
+			#songs {
+				border-style: solid;
+				border-color: #999999;
+				border-width: 1px;
+				margin-left: 220px;
+				background-color: #FFFFFF;
+				min-height: 400px;
+			}
+			
+			#message, #waiting, #msg_dosearch, #msg_error {
+				text-align: center;
+				font-size: 14pt;
+			}
+			
+			#songs .KJList {
+				padding: 0px;
+				height: 400px;
+				overflow: auto;
+				background-color: #FFFFFF;
+			}
+			
+			.KJListColumn {
+				padding: 0px;
+				margin: 0px;
+				background: url('column-bg.jpg');
+				cursor: default;
+			}
+			
+			.KJListColumn td {
+				border-style: solid;
+				border-color: #999999;
+				border-width: 0px;
+				border-right-width: 1px;
+			}
+			
+			.KJListColumn .primary {
+				background: url('column-selected-bg.jpg');
+			}
+			
+			.KJListItem, .KJListItem_alt, .KJListItem_selected, .KJListItem_drag, .KJListItem_target, .KJListItem_alt_target {
+				padding: 0px;
+				padding-top: 0px;
+				padding-bottom: 0px;
+				margin: 0px;
+				cursor: default;
+				border-style: solid;
+				border-color: #FFFFFF;
+				border-width: 0px;
+				border-bottom-width: 1px;
+			}
+			
+			.KJListItem_alt {
+				background-color: #EEEEFF;
+			}
+			
+			.KJListItem_selected {
+				background-color: #4444FF;
+				color: #FFFFFF;
+			}
+						
+			.KJListItem_target, .KJListItem_alt_target {
+				border-style: solid;
+				border-color: #000000;
+				border-width: 0px;
+				border-top-width: 1px;
+			}
+			
+			.KJListItem_alt_target {
+				background-color: #EEEEFF;
+			}
+			
+			.KJListItem_drag {
+				position: absolute;
+				border-style: solid;
+				border-color: #000000;
+				border-width: 1px;
+				background-color: #DDDDDD;
+				filter:alpha(opacity=40); /* for IE */
+				-moz-opacity:0.4;
+				opacity: 0.4;	
+			}
+			
+			.KJList input {
+				padding: 0px;
+				margin: 0px;
+				border-style: solid;
+				border-color: #000000;
+				border-width: 1px;
+			}
+			
+			.KJList input:active {
+				background-color: #000000;
+				color: #FFFFFF;
+			}
+			
+			#playlists .KJListItem, #playlists .KJListItem_alt, #playlists .KJListItem_selected, #playlists .KJListItem_target, #playlists .KJListItem_alt_target {
+				background: url('playlist-icon.gif');
+				background-repeat: no-repeat;
+				padding: 0px;
+				padding-left: 20px;
+				border-style: solid;
+				border-color: #FFFFFF;
+				border-width: 3px;
+			}
+			
+			
+			#playlists .KJListItem_alt {
+				background-color: #EEEEFF;
+			}
+			
+			#playlists .KJListItem_selected {
+				background-color: #4444FF;
+				color: #FFFFFF;
+			}
+			
+			#playlists .KJListItem_target, #playlists .KJListItem_alt_target {
+				border-color: #000000;
+				background-color: #9999FF;
+			}
+
+			.clear {
+				clear: both;
+			}
+		</style>
+	</head>
+	
+	<body onLoad="m_sessionCheckin()" onmousemove="m_pingSession()">
+		<div id="main">
+			<table><tr><td id="title"><nobr>Singer: {singer}</nobr></td><td id="search"><nobr>Search Library: <input type="search" id="searchfield" name="search" onkeypress=searchKeyPressed(event) />&nbsp;<input type="submit" style="" name="dosearch" value="Go" onclick=m_doSearch() /></nobr></td><td id="help"><nobr>[ <a id="helplink" href="">Help</a> ] [ <a id="logoutlink" href="">Logout</a> ]</nobr></td></tr></table>
+			
+			<div>
+				<div id="left">
+					<div id="playlists"></div>
+					<div id="photo"><img src="kjams-main.jpg" /></div>
+				</div>
+				
+				<div id="songs"><p id="msg_error"></p><p id="msg_dosearch">Please enter a search.</p><p id="message">No Playlist Selected.</p><p id="waiting">Please wait, loading playlist...</p></div>
+				
+				<div class="clear">&nbsp;</div>
+				<div id="status">Welcome to kJams!</div>
+			</div>
+		</div>
+		
+		<script language="javascript">
+			//Bind key press function
+			document.onkeyup = m_keyPressed;
+		
+			//Hide message fields
+			document.getElementById("waiting").style.display = 'none';
+			document.getElementById("msg_dosearch").style.display = 'none';
+			document.getElementById("msg_error").style.display = 'none';
+			
+			//Plug in help and logout URLs
+			document.getElementById("helplink").href = url_help;
+			document.getElementById("logoutlink").href = url_login;
+			
+			//Playlists
+			m_populatePlaylists();
+		
+			if (0) {
+				//Song list
+				var songs = new KJList();
+				songs.create(document.getElementById("songs"));
+				songs.setColumns(Array("#", "Song Name", "Artist", "Pitch", "Add to", "Add to"), 1);
+				
+				//Set clipping
+				songs.setClipping({'right' : songs.getColumnWidth(5) + songs.getColumnWidth(4) + songs.getColumnWidth(3)});
+				
+				getSongs(url_songs, populateList, 'playlist=1');
+				
+				function populateList(songList) {
+					for(var i = 0; i < songList.length; i++) {
+						songs.addItem(songList[i]['number'], Array(songList[i]['number'], songList[i]['name'], songList[i]['artist'], "<select><option>+6</option><option>+5</option><option>+4</option><option>+3</option><option>+2</option><option>+1</option><option selected>0</option><option>-1</option><option>-2</option><option>-3</option><option>-4</option><option>-5</option></select>", "<input type=\"submit\" value=\"Tonight\" />", "<input type=\"submit\" value=\"Favorites\" />"), null, null, false);
+					}
+					
+					songs.color();
+				}
+			}
+		</script>
+	</body>
+</html>
