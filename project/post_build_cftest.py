@@ -56,8 +56,10 @@ def main(qtB, bitDepth, buildType, ssl_edition):
 				#post_build_cf.qt_deploy(projDir, buildType, bitDepth, projName)
 				#post_build_cf.copy_vc_runtimes(projDir, buildType, bitDepth, projName)
 			else:
-				post_build_cf.qt_deploy(projDir, buildType, bitDepth, projName)
-				post_build_cf.copy_vc_runtimes(projDir, buildType, bitDepth, projName)
+				pass
+				# no need cuz it doesn't USE any QT libs?
+				#post_build_cf.qt_deploy(projDir, buildType, bitDepth, projName)
+				#post_build_cf.copy_vc_runtimes(projDir, buildType, bitDepth, projName)
 
 	else:
 		debug_print("Creating VS bundle")

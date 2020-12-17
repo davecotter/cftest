@@ -130,8 +130,9 @@ enum {
 	#define	structclr(p)	memclr(&p, sizeof(p))
 #endif
 
-#define			kCFIndexEnd		(CFIndex)-2
-#define			kCFIndex_0		(CFIndex)0
+static const CFIndex kCFIndex_0		= 0;
+//static const CFIndex kCFNotFound = -1;
+static const CFIndex kCFIndexEnd	= -2;
 
 #define		kMacOS_System6			0x060000
 #define		kMacOS_10_3				0x100300		//	Panther
@@ -147,9 +148,11 @@ enum {
 #define		kMacOS_10_13			0x101300		//	HighSierra	
 #define		kMacOS_10_14			0x101400		//	Mojave
 #define		kMacOS_10_15			0x101500		//	Catalina
+#define		kMacOS_11_0				0x110000		//	Big Sur
+#define		kMacOS_11_1				0x110100		//	?
 
-#define		kMacOS_Current			kMacOS_10_14
-#define		kMacOS_Next				kMacOS_10_15
+#define		kMacOS_Current			kMacOS_11_0		//	currently released
+#define		kMacOS_Next				kMacOS_11_1		//	not released yet
 
 class SuperString;
 
@@ -163,7 +166,9 @@ extern const CFTimeInterval kCFAbsoluteTimeIntervalOneMonth;
 
 namespace std {
 	template<typename T>
-	T&	clamp(T& v, T min, T max) {
+	T	clamp(const T& in_v, const T& min, const T& max) {
+		T	v(in_v);
+		
 		if (v < min) {
 			v = min;
 		} else if (v > max) {
@@ -1670,7 +1675,9 @@ template <typename T> class ScSetReset {
 	T			Get()	{	return i_oldVal;	}
 };
 
-SInt64		CFSecondsToMilliseconds(double secF);
-double		CFMillisecondsToSeconds(SInt64 milliI);
+typedef		SInt64	CFTimeIntervalMilliseconds;
+
+CFTimeIntervalMilliseconds		CFSecondsToMilliseconds(CFTimeInterval secF);
+CFTimeInterval					CFMillisecondsToSeconds(CFTimeIntervalMilliseconds milliI);
 
 #endif

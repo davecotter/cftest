@@ -3323,10 +3323,16 @@ SystemVersType		GetSystemVers(void)
 
 SuperString		GetSystemVersStr(SystemVersType sysVers)
 {
-	SuperString		versStr = "macOS 10.";
-	
+	SuperString		versStr = "macOS 1";
+
 	sysVers &= 0xFFFFFF00;
-	
+
+	if (sysVers < kMacOS_11_0) {
+		versStr += "0.";
+	} else {
+		versStr += "1.";
+	}
+
 	switch (sysVers) {
 		default:			versStr += "Unknown System";	break;
 		case kMacOS_System6:versStr = "System 6";			break;
@@ -3343,6 +3349,8 @@ SuperString		GetSystemVersStr(SystemVersType sysVers)
 		case kMacOS_10_13:	versStr += "13 (High Sierra)";	break;
 		case kMacOS_10_14:	versStr += "14 (Mojave)";		break;
 		case kMacOS_10_15:	versStr += "15 (Catalina)";		break;
+		case kMacOS_11_0:	versStr += "0 (Big Sur)";		break;
+		case kMacOS_11_1:	versStr += "1 (?)";				break;
 	}
 	
 	return versStr;
@@ -4933,14 +4941,14 @@ UInt32		CFTickCount()
 	return EventTimeToTicks(curT);
 }
 
-SInt64			CFSecondsToMilliseconds(CFTimeInterval secF)
+CFTimeIntervalMilliseconds			CFSecondsToMilliseconds(CFTimeInterval secF)
 {
 	double		milliF(secF * (double)kDurationSecond);
 
 	return math_round(milliF);
 }
 
-CFTimeInterval		CFMillisecondsToSeconds(SInt64 milliI)
+CFTimeInterval						CFMillisecondsToSeconds(CFTimeIntervalMilliseconds milliI)
 {
 	return milliI / (double)kDurationSecond;
 }

@@ -1908,6 +1908,19 @@ SuperString&	SuperString::SplitAfterCount(char splitC, size_t keep_countL)
 	return *this;
 }
 
+SuperString&	SuperString::Split(size_t splitL, SuperString& rhs)
+{
+	if (!empty() && splitL < size()) {
+		const UTF8Char	*strA(utf8().c_str());
+		const UTF8Char	*beginP(strA + splitL);
+		const UTF8Char	*endP(strA + size());
+
+		rhs.assign(beginP, endP);
+		resize(splitL);
+	}
+
+	return *this;
+}
 
 bool	SuperString::Split(const char *splitZ, SuperString *rhsP0, bool from_endB)
 {
@@ -2087,17 +2100,29 @@ UInt32				SuperString::GetAs_Hash() const
 	SuperString		str(*this);
 	UInt32			hashL = 0;
 	SuperString		curStr;
-	
+
 	while (!str.empty()) {
 		curStr = str.pop_front(4);
 		while (curStr.size() < 4) {
 			curStr.append(" ");
 		}
-		
+
 		hashL ^= curStr.GetAs_OSType();
 	}
-	
+
 	return hashL;
+}
+
+UInt64				SuperString::GetAs_Hash64() const
+{
+	UInt64			hashLL = 0;
+	SuperString		str2, str1(md5());
+
+	str1.Split(str1.size() >> 1, str2);
+
+	hashLL = ((UInt64)str1.GetAs_Hash() << 32) + str2.GetAs_Hash();
+
+	return hashLL;
 }
 
 OSType				SuperString::GetAs_OSType(bool justifyB) const

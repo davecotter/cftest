@@ -398,14 +398,7 @@ public:
 		SetNULL();
 		Set(myRef, retainB);
 	}
-	
-	/*
-	SuperString(CFDataRef myRef) {
-		SetNULL();
-		Set(myRef);
-	}
-	*/
-	
+
 	void	LogCount(const char *nameZ);
 	void	Set_CFType(CFTypeRef cfType);
 	
@@ -768,6 +761,7 @@ public:
 
 	double			GetAs_Double() const	{	return CStringToDouble(c_str());	}
 	UInt32			GetAs_Hash() const;
+	UInt64			GetAs_Hash64() const;
 	UCharVec		GetAs_UCharVec(size_t first_n = 0)		{
 		UCharVec		vec(first_n == 0 ? size() : first_n);
 		
@@ -821,7 +815,9 @@ public:
 	}
 	
 	short	count_match_ww(const SuperString& matchStr);
-		
+
+	SuperString&	Split(size_t splitAt, SuperString& rhs);
+
 	SuperString&	SplitAfterCount(char splitC, size_t keep_countL);
 
 	bool			rSplit(const char *splitZ, SuperString *lhsP0 = NULL, bool from_endB = false);	

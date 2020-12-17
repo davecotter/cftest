@@ -80,6 +80,7 @@ macx {
 	LIBS += -framework CoreFoundation
 	LIBS += -framework ApplicationServices
 
+	QMAKE_MAC_SDK = macosx10.13
 	QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 
 	QMAKE_CXXFLAGS_WARN_ON += -Wall -Wno-unused-parameter

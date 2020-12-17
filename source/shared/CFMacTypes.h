@@ -3,6 +3,7 @@
 #ifndef _H_CFMacTypes
 #define _H_CFMacTypes
 
+#include <vector>
 #include "CoreFoundation/CFBase.h"
 
 #if OPT_WINOS
@@ -126,6 +127,8 @@
 	#endif	//	!OPT_MACOS
 
 #endif //	_QT_
+
+typedef std::vector<Rect>				RectVec;
 
 #if OPT_MACOS || _YAAF_
 

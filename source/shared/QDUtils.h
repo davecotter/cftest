@@ -89,6 +89,7 @@
 
 	Boolean		QD_SectRect(const Rect *a, const Rect *b, Rect *out);
 	void		QD_UnionRect(const Rect *a, const Rect *b, Rect *out);
+	RectVec		QD_DiffRect(const Rect &lhsR, const Rect &rhsR);
 	Boolean		QD_PtInRect(Point pt, const Rect *r);
 	void		QD_Pt2Rect(Point a, Point b, Rect *r);
 	void		QD_ScaleRect(Rect *r, float scaleF);

@@ -18,3 +18,9 @@ project/win_vs/CFTest.vcproj.THEIA-PC.davec.user
 project/win_vs/CFTest.vcxproj.filters
 project/win_vs/CFTest.vcxproj.user
 project/win_vs/UpgradeLog.htm
+project/qt/CFTest/win_32-CFTest
+project/qt/CFTest/win_64-CFTest
+*.user
+*.pyc
+*.pyc
+*.user

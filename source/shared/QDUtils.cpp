@@ -145,7 +145,62 @@ Boolean		QD_SectRect(const Rect *a, const Rect *b, Rect *out)
 	return has_some_areaB;
 }
 
-void	QD_UnionRect(const Rect *a, const Rect *b, Rect *out)
+
+// https://stackoverflow.com/questions/25068538/intersection-and-difference-of-two-rectangles
+//https://stackoverflow.com/questions/5144615/difference-xor-between-two-rectangles-as-rectangles
+
+static Rect		MakeRect(short left, short right, short top, short bottom)
+{
+	Rect		outR;
+	
+	QD_SetRect(&outR, left, top, right, bottom);
+	return outR; 
+}
+
+RectVec		QD_DiffRect(const Rect& lhsR, const Rect& rhsR)
+{
+	RectVec		rectVec;
+	short		a = math_min( lhsR.left, rhsR.left );
+	short		b = math_max( lhsR.left, rhsR.left );
+	short		c = math_min( lhsR.right, rhsR.right );
+	short		d = math_max( lhsR.right, rhsR.right );
+
+	short		e = math_min( lhsR.top, rhsR.top );
+	short		f = math_max( lhsR.top, rhsR.top );
+	short		g = math_min( lhsR.bottom, rhsR.bottom );
+	short		h = math_max( lhsR.bottom, rhsR.bottom );
+
+	// X = intersection, 0-7 = possible difference areas
+	// h +-+-+-+
+	// . |5|6|7|
+	// g +-+-+-+
+	// . |3|X|4|
+	// f +-+-+-+
+	// . |0|1|2|
+	// e +-+-+-+
+	// . a b c d
+
+	// we'll always have rectangles 1, 3, 4 and 6
+	rectVec.push_back(MakeRect( b, c, e, f ));
+	rectVec.push_back(MakeRect( a, b, f, g ));
+	rectVec.push_back(MakeRect( c, d, f, g ));
+	rectVec.push_back(MakeRect( b, c, g, h ));
+
+	// decide which corners
+	if( lhsR.left == a && lhsR.top == e || rhsR.left == a && rhsR.top == e ) {
+		// corners 0 and 7
+		rectVec.push_back(MakeRect( a, b, e, f ));
+		rectVec.push_back(MakeRect( c, d, g, h ));
+	} else { 
+		// corners 2 and 5
+		rectVec.push_back(MakeRect( c, d, e, f ));
+		rectVec.push_back(MakeRect( a, b, g, h ));
+	}
+
+	return rectVec;
+}
+	
+void		QD_UnionRect(const Rect *a, const Rect *b, Rect *out)
 {
 	if (QD_EmptyRect(a)) {
 		*out = *b;

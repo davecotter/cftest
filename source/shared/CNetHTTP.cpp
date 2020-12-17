@@ -1529,7 +1529,8 @@ void	CNet_Completion::operator()()
 		ERR(FSrSetEOF(i_fileRef, eof - i_netP->i_leftOverL));
 	}
 
-	CF_ASSERT(i_netP);
+	//	can be called when there is no i_netP
+	//	if it is short circuited before the net is set up
 	if (i_netP) {
 		ERR(i_netP->DownloadCompleted(i_err));
 	}
@@ -1544,10 +1545,12 @@ void	CNet_Completion::operator()()
 		}
 	}
 	
-	CNetHTTP	*deleteMeP = i_netP;
-	
-	i_netP = NULL;
-	delete deleteMeP;
+	if (i_netP) {
+		CNetHTTP	*deleteMeP = i_netP;
+		
+		i_netP = NULL;
+		delete deleteMeP;
+	}
 	#endif
 }
 
