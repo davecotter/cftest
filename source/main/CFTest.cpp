@@ -252,21 +252,20 @@ class Array_Each_CFTimeZone {
 		SuperString			test_tzLocNameStr(		test_dict.GetAs_SString(kCFTimeZoneDictKey_LocalizedName));
 		SuperString			test_tzLocNameDstStr(	test_dict.GetAs_SString(kCFTimeZoneDictKey_LocalizedName_Dst));
 
-		#if OPT_WINOS
-		{
-			SuperString			msgStr("Set your computer's time zone to:\n");
-
-			msgStr += test_tzDisplayNameStr.Enquote(true);
-			CFWaitForKeyPress(msgStr.ref());
-			CFTimeZoneResetSystem();
-		}
-		#else
 		{
 			CCFTimeZone		newTz(CFTimeZoneCreateWithName(kCFAllocatorDefault, test_tzNameStr.ref(), true));
 
-			CFTimeZoneSetDefault(newTz);
+			if (newTz.ref()) {
+				CFTimeZoneSetDefault(newTz);
+
+			} else {
+				SuperString			msgStr("Set your computer's time zone to:\n");
+
+				msgStr += test_tzDisplayNameStr.Enquote(true);
+				CFWaitForKeyPress(msgStr.ref());
+				CFTimeZoneResetSystem();
+			}
 		}
-		#endif
 
 		CCFTimeZone			curTz(			CFTimeZoneCopyDefault());
 		CCFDictionary		dict(			CFTimeZoneCopyDict(curTz));
