@@ -956,6 +956,61 @@ void	CFTest()
 		}
 		#endif
 
+		//	display 24 timezones using "GMT Offset" method
+		#if 0
+		{
+			CFAbsoluteTime			absT(CFAbsoluteTimeGetCurrent());
+			CCFTimeZone				curTz(CFTimeZoneCopyDefault());
+			CFTimeInterval			intervalTz(CFTimeZoneGetSecondsFromGMT(curTz.ref(), absT));
+			SuperString				dateStr;
+
+			//	show time in 24 timezones (unnamed, no daylight savings)
+			loop (24) {
+				CCFTimeZone			timeZone(
+					CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, intervalTz));
+
+				dateStr.Set(absT, SS_Time_SHORT, 0, timeZone.ref());
+
+				SuperString		zoneNameStr(CFTimeZoneGetName(timeZone.ref()));
+
+				dateStr += " (" + zoneNameStr + ")";
+
+				CCFLog(true)(dateStr.ref());
+
+
+				intervalTz += kEventDurationHour;
+				if (intervalTz > (kEventDurationDay / 2)) {
+					intervalTz -= kEventDurationDay;
+				}
+			}
+		}
+		#endif
+
+		//	can you create time zones
+		#if 1
+		{
+			SuperString			tzStr("Europe/Berlin");
+			CCFTimeZone			curTz(CFTimeZoneCreateWithName(
+				kCFAllocatorDefault, tzStr.ref(), false));
+
+			CFReportUnitTest("Creating Time Zones", curTz.Get() == NULL);
+
+			if (ExtraLogging()) {
+
+				if (curTz.ref()) {
+					CCFDictionary		dict(CFTimeZoneCopyDict(curTz));
+
+					CCFLog(true)(curTz);
+					CCFLog(true)(dict);
+				} else {
+					tzStr.Enquote(true);
+					tzStr.append(" doesn't exist");
+					CCFLog(true)(tzStr.ref());
+				}
+			}
+		}
+		#endif
+
 		#if 1
 		{
 			CCFArray	tz_unit_test_array;
@@ -1141,56 +1196,6 @@ void	CFTest()
 			#endif
 
 			tz_unit_test_array.for_each(Array_Each_CFTimeZone());
-		}
-		#endif
-
-		//	display info for a particular TZ
-		#if 0
-		{
-			SuperString			tzStr("Europe/Berlin");
-			CCFTimeZone			curTz(CFTimeZoneCreateWithName(
-				kCFAllocatorDefault, tzStr.ref(), false));
-
-			if (curTz.ref()) {
-				CCFDictionary		dict(CFTimeZoneCopyDict(curTz));
-
-				CCFLog(true)(curTz);
-				CCFLog(true)(dict);
-			} else {
-				tzStr.Enquote(true);
-				tzStr.append(" doesn't exist");
-				CCFLog(true)(tzStr.ref());
-			}
-		}
-		#endif
-
-		//	display 24 timezones using "GMT Offset" method
-		#if 0
-		{
-			CFAbsoluteTime			absT(CFAbsoluteTimeGetCurrent());
-			CCFTimeZone				curTz(CFTimeZoneCopyDefault());
-			CFTimeInterval			intervalTz(CFTimeZoneGetSecondsFromGMT(curTz.ref(), absT));
-			SuperString				dateStr;
-
-			//	show time in 24 timezones (unnamed, no daylight savings)
-			loop (24) {
-				CCFTimeZone			timeZone(
-					CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, intervalTz));
-
-				dateStr.Set(absT, SS_Time_SHORT, 0, timeZone.ref());
-				
-				SuperString		zoneNameStr(CFTimeZoneGetName(timeZone.ref()));
-				
-				dateStr += " (" + zoneNameStr + ")";
-				
-				CCFLog(true)(dateStr.ref());
-				
-				
-				intervalTz += kEventDurationHour;
-				if (intervalTz > (kEventDurationDay / 2)) {
-					intervalTz -= kEventDurationDay;
-				}
-			}
 		}
 		#endif
 	}

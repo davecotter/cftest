@@ -3023,8 +3023,10 @@ void				CFWaitForKeyPress(CFStringRef msgRef)
 	CCFDictionary							paramDict;
 
 	paramDict.SetValue(kCFUserNotificationAlertHeaderKey, msgRef);
-	paramDict.SetValue(kCFUserNotificationAlertMessageKey, CFSTR("Please do this, then press 'Continue'"));
-	paramDict.SetValue(kCFUserNotificationDefaultButtonTitleKey, CFSTR("Continue"));
+
+	//	must use "OK" since you can't customize the button on windows (yet)
+	paramDict.SetValue(kCFUserNotificationAlertMessageKey, CFSTR("Please do this, then press 'OK'"));
+	paramDict.SetValue(kCFUserNotificationDefaultButtonTitleKey, CFSTR("OK"));
 
 	SInt32									err(0);
 	ScCFReleaser<CFUserNotificationRef>		notificationRef(CFUserNotificationCreate(
@@ -3464,7 +3466,7 @@ void	CFReportUnitTest(const char *utf8Z, OSStatus err)
 	
 	str.Set(
 		err
-			? uc("$$ FAIL: ")
+			? uc("FAIL: ")
 			: uc("PASS: "));
 	
 	if (err) {
