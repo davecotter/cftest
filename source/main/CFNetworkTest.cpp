@@ -13,7 +13,7 @@
 
 //---------------------------------------------------------------------------------------------------------
 //	test all of these, all must succeed
-#if 1
+#if 0
 	#define		kTest_Bonjour					1
 	#define		kTest_SimpleDownload			1
 	#define		kTest_SSL_Download				1
@@ -23,14 +23,14 @@
 	#define		kTest_ComplexDownload_LARGE		0
 	#define		kTest_Upload					1
 #else
-	#define		kTest_Bonjour					0
-	#define		kTest_SimpleDownload			0
-	#define		kTest_SSL_Download				0
-	#define		kTest_SSL_DateHeader			0
-	#define		kTest_Redirect					0
+	#define		kTest_Bonjour					1
+	#define		kTest_SimpleDownload			1
+	#define		kTest_SSL_Download				1
+	#define		kTest_SSL_DateHeader			1
+	#define		kTest_Redirect					1
 	#define		kTest_ComplexDownload_SMALL		1
-	#define		kTest_ComplexDownload_LARGE		0
-	#define		kTest_Upload					0
+	#define		kTest_ComplexDownload_LARGE		1
+	#define		kTest_Upload					1
 #endif
 
 //	no need to test these
@@ -400,6 +400,17 @@ void	CFNetworkTest()
 		
 		if (kTest_ComplexDownload_SMALL) {
 			if (ExtraLogging()) CCFLog()(CFSTR("------------------complex download SMALL with redirect---------------\n"));
+			
+			{
+				CNetHTTP				net(kCFURLAccessMethod_GET);
+				SuperString				resultStr;
+				
+				net.SetLogging(ExtraLogging());
+				ERR(net.Download_String("https://www.dropbox.com/s/rhca1ldydyhcrxf/Party%20Tyme%20Pro%20Streaming.json?dl=1", &resultStr));
+				CFReportUnitTest("download string", err);
+				
+				CCFLog(true)(resultStr.ref());
+			}
 			
 			CNetHTTP				net(kCFURLAccessMethod_GET);
 			CCFData					dataRef;

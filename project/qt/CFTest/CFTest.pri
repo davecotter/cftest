@@ -1,8 +1,9 @@
 # this line makes qmake parse this file ONCE not three times
 CONFIG -= debug_and_release
+QT -= core gui
 
-QT -= core
-QT -= gui
+# this line makes the compile output just show name of file, not all the cmd line args
+CONFIG += SILENT
 
 message(------------------------------)
 
@@ -19,7 +20,6 @@ DEFINES += _QT_
 DEFINES += _CFTEST_
 DEFINES += _MIN_CF_
 DEFINES += _JUST_CFTEST_
-CONFIG += SILENT	# don't tell me ALL the cmd line args about each file you compile, just it's name
 CONFIG += c++11
 
 macx {
@@ -34,6 +34,9 @@ macx {
 
 	# options: openssl | libressl
 	ssl_edition = libressl
+
+	CONFIG += no_utf8_source
+	QMAKE_CXXFLAGS += /source-charset:.10000
 }
 
 contains(QMAKE_TARGET.arch, x86_64) {
@@ -59,13 +62,26 @@ message(build_type: $${build_type})
 message(target: $${TARGET} ($${build_depth}bit))
 
 # relative to shadow build dir, not proj dir??
-DIR_PROJ		= ../../../
-DIR_CFTEST		= $${DIR_PROJ}../
+CUR_DIR			= $$clean_path($${PWD})/
+DIR_PROJ		= $$clean_path($${CUR_DIR}../../)/
+DIR_CFTEST		= $$clean_path($${DIR_PROJ}../)/
+DIR_CF			= $$clean_path($${DIR_CFTEST}../CF)/
+
+#message(CUR_DIR: $${CUR_DIR})
+#message(DIR_PROJ: $${DIR_PROJ})
+#message(DIR_CFTEST: $${DIR_CFTEST})
+#message(DIR_CF: $${DIR_CF})
+
 DIR_SOURCE		= $${DIR_CFTEST}source/
-DIR_CF			= $${DIR_CFTEST}../CF/
 DIR_OPENCFL		= $${DIR_CF}opencflite-476.17.2/
 DIR_CFNET		= $${DIR_CF}CFNetwork/
 DIR_CFNET_INC	= $${DIR_CFNET}include/
+
+INCLUDEPATH		+= $${DIR_SOURCE}headers
+STD_AFX			= $${DIR_SOURCE}headers/stdafx.h
+
+HEADERS			+= $${STD_AFX}
+PRECOMPILED_HEADER = $${STD_AFX}
 
 macx {
 	FRAMEWORKS_DIR	= /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
@@ -80,7 +96,7 @@ macx {
 	LIBS += -framework CoreFoundation
 	LIBS += -framework ApplicationServices
 
-	QMAKE_MAC_SDK = macosx10.13
+	# QMAKE_MAC_SDK = macosx10.13
 	QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 
 	QMAKE_CXXFLAGS_WARN_ON += -Wall -Wno-unused-parameter
@@ -113,9 +129,9 @@ macx {
 
 	CFLITE_LIB_NAME = CFLite$${BUILD_TYPE_SUFFIX}
 	
-	REL_DIR_CFLITE = CFLite/win_$${build_depth}-$${CFLITE_LIB_NAME}/
+	REL_DIR_CFLITE = CFLite/win_$${BUILD_KIT}/$${CFLITE_LIB_NAME}/
 
-	#message(CFLite Dir: $$REL_DIR_CFLITE)
+	#message(CFLite Dir: $${DIR_OPENCFL}Qt/$$REL_DIR_CFLITE)
 	LIBS += -L$${DIR_OPENCFL}Qt/$${REL_DIR_CFLITE} -l$${CFLITE_LIB_NAME}
 
 	CONFIG(release, debug|release) {
@@ -133,14 +149,14 @@ macx {
 	LIBS += -lOle32 -lUser32
 	LIBS += -lWs2_32 -lkernel32 -loleaut32 -lgdi32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -luuid -lodbc32 -lodbccp32 -lcomctl32
 
-	INCLUDEPATH += $${DIR_OPENCFL}dist/include
-	DEPENDPATH	+= $${DIR_OPENCFL}dist/include
+	DIST_INCLUDE = $${DIR_OPENCFL}dist/include/
+	INCLUDEPATH += $${DIST_INCLUDE}
+	DEPENDPATH	+= $${DIST_INCLUDE}
 }
 
-QMAKE_POST_LINK += python $${DIR_PROJ}post_build_cftest.py QT $$build_depth $$TARGET $$ssl_edition
+QMAKE_POST_LINK += python $${DIR_PROJ}post_build_cftest.py QT $${BUILD_KIT} $$TARGET $$ssl_edition
 
 INCLUDEPATH += $${DIR_SOURCE}
-INCLUDEPATH += $${DIR_SOURCE}headers
 INCLUDEPATH += $${DIR_SOURCE}shared
 INCLUDEPATH += $${DIR_SOURCE}main
 INCLUDEPATH += $${DIR_CFNET_INC}	# needed on windows
@@ -171,5 +187,4 @@ HEADERS += \
 	$${DIR_SOURCE}main/CFNetworkTest.h \
 	$${DIR_SOURCE}main/CFTest.h \
 	$${DIR_SOURCE}main/CFTestUtils.h \
-	$${DIR_SOURCE}main/CWebServerTest.h \
-	$${DIR_SOURCE}headers/stdafx.h
+	$${DIR_SOURCE}main/CWebServerTest.h

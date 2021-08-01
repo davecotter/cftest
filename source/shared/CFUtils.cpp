@@ -9,10 +9,15 @@
 #include "stdafx.h"
 #include "CFStackTrace.h"
 #include "MinMax.h"
+#include <iostream>
 
 #ifdef _KJAMS_
 	#include "CApp.h"
 	#include "PrefKeys_p.h"
+#endif
+
+#if _QT_ && !defined(_JUST_CFTEST_)
+#include <QDebug>
 #endif
 
 #if defined(_KJAMS_) && !defined(_KJAMSX_)
@@ -94,6 +99,10 @@
 		#pragma comment(lib, kCFLiteLib ".lib")
 	#endif
 #endif
+
+#if _QT_
+//	#include <QDebug>
+#endif
 	
 #include "CCFData.h"
 
@@ -108,6 +117,16 @@ static	bool	s_insensB = true;
 const char ENTER_STR[2]		=	{ ENTER_KEY, 0x00 };
 const char RETURN_STR[2]	=	{ RETURN_KEY, 0x00 };
 const char LINEFEED_STR[2]	=	{ LINEFEED_KEY, 0x00 };
+
+const char*	kCFTimeZoneDictKey_Name					= "name";
+const char*	kCFTimeZoneDictKey_DisplayName			= "display_name";
+const char*	kCFTimeZoneDictKey_LocalizedName		= "localized_name";
+const char*	kCFTimeZoneDictKey_LocalizedName_Dst	= "localized_dst_name";
+const char*	kCFTimeZoneDictKey_Abbreviation			= "abbrev";
+const char*	kCFTimeZoneDictKey_Abbreviation_Dst		= "abbrev_dst";
+const char*	kCFTimeZoneDictKey_ZoneOffset			= "zone_offset";
+const char*	kCFTimeZoneDictKey_IsDst				= "is_dst";
+const char*	kCFTimeZoneDictKey_DstOffset			= "dst_offset";
 
 void	CFLogArgs(int argc, const char *argv[])
 {
@@ -165,7 +184,6 @@ bool	CFGetDiacriticInsensitive()
 #if defined(_QTServer_)
 	#include "CarbonEventsCore.h"
 #endif
-const CFTimeInterval kCFAbsoluteTimeIntervalOneMonth	= kEventDurationMonth;
 
 void	FilterErr(OSStatus err, bool from_exceptionB)
 {
@@ -192,10 +210,6 @@ void	FilterErr(OSStatus err, bool from_exceptionB)
 	}
 	#endif
 }
-
-#if defined(__WIN32__)
-	static	bool	s_setLogB = false;
-#endif
 
 // static
 CFStringRef		CCFLog::i_logPathRef = NULL;
@@ -226,16 +240,9 @@ void		CCFLog::SetLogPath(CFStringRef logPathRef)
 boost::thread_specific_ptr<bool> 	s_last_crB;
 #endif
 
-#if (OPT_WINOS || defined(_CFTEST_) || defined(_MIN_CF_))
-	#define	kUseCFLogger		1
-#else
-	#define	kUseCFLogger		0
-#endif
+#define	kUseCFLogger		1
 
-
-#define		kLogWithTime		0
-
-#if !kUseCFLogger || defined(_KJAMSX_) || _QT_
+#define	kLogWithTime		0
 
 #if defined(_KJAMS_)
 SuperString			CurThreadIndexStr();
@@ -270,13 +277,43 @@ static void			PrependThreadNumber(SuperString& str, bool crB)
 	}
 	
 	was_crB = is_crB;
+#else
+	UNREFERENCED_PARAMETER(str);
+	UNREFERENCED_PARAMETER(crB);
 #endif
 }
+
+// =================================================
+#ifdef _H_CFileRef
+	static CFileRef			s_cfileRef;
 #endif
 
-#ifdef _H_CFileRef
-static CFileRef			s_cfileRef;
+static	FILE	*s_logP = NULL;
+
+FILE*	CCFLog_GetLogFile();
+FILE*	CCFLog_GetLogFile()
+{
+	return  s_logP;
+}
+
+void	CCFLog_SetLogFile(FILE* fileP);
+void	CCFLog_SetLogFile(FILE* fileP)
+{
+	s_logP = fileP;
+}
+
+#if defined(_H_CFileRef)
+static bool	s_alert_logsB = false;
 #endif
+
+class CSuppressLogging {
+	ScSetReset<bool>	i_sc;
+
+	public:
+	CSuppressLogging();
+};
+
+// =================================================
 
 void	CCFLog::trim()
 {
@@ -329,152 +366,152 @@ void	CCFLog::trim()
 	#endif // _KJAMS_
 }
 
-static	FILE	*s_logP = NULL;
+#define		kCreateLogFileInDebug		1
 
-FILE*	CCFLog_GetLogFile();
-FILE*	CCFLog_GetLogFile()
+static FILE*		GetOrCreateLogFile()
 {
-	return  s_logP;
-}
+	static bool			s_triedB =
+		#if defined(kDEBUG)
+			!kCreateLogFileInDebug;
+		#else
+			false;
+		#endif
 
-void CCFLog::operator()(CFTypeRef valRef) {
-	
-	#if defined(__WIN32__)
-		#define		USE_CFSHOW		0
+	if (CCFLog_GetLogFile() == NULL && !s_triedB) {
 
-		if (!s_setLogB) {
-			s_setLogB = true;
-			//	CFSetLogFile(CFSTR("CF_Log.txt"), kCFStringEncodingUTF8);
-		}
-	#else
-		#define		USE_CFSHOW		0
-	#endif
-
-	#if !USE_CFSHOW
-	{
-		if (!CFGetLogging()) return;
-		
-		SuperString			valStr;	valStr.Set_CFType(valRef);
-		FILE				*log_fileP = stdout;
-		
-		if (i_crB) {
-			valStr.append("\n");
-		}
-		
-		#if defined(__WIN32__)
+		#if OPT_MACOS
+		{
+			#if !defined(_H_CFileRef)
+				s_triedB = true;
+			#else 
 			
-			//	GUI APP
-			
-			if (s_logP == NULL) {
-				int				tryLastErr, tryErrNo;
-				SuperString		tryPathStr;
-				SuperString		pathStr;
-
-				if (GetLogPath()) {
-					pathStr.Set(GetLogPath());
-					tryPathStr = pathStr;
-				} else {
-					SuperString						relPathStr("../");
-					CFBundleRef						bundleRef(CFBundleGetMainBundle());
-					CCFURL							urlRef(CFBundleCopyExecutableURL(bundleRef));
-					SuperString						testRelPath(CFURLCopyLastPathComponent(urlRef), false);
-
-					#if 0
-						testRelPath.pop_ext();
-						testRelPath.append(" ");
-						testRelPath.append(kJams_LogFileName);
-					#else
-						testRelPath.Set(kJams_LogFileName);
-					#endif
-
-					testRelPath.prepend(relPathStr);
-
-					CCFURL							bundleUrlRef(CFBundleCopyBundleURL(bundleRef));
-					CCFURL							xmlUrlRef(CFURLCreateWithFileSystemPathRelativeToBase(
-						kCFAllocatorDefault, testRelPath.ref(), kCFURLPOSIXPathStyle, false, bundleUrlRef));
-					CCFURL							absUrlRef(CFURLCopyAbsoluteURL(xmlUrlRef));
-
-					pathStr.Set(CFURLCopyFileSystemPath(absUrlRef, kCFURLPlatformPathStyle), false);
+			if ((FILE *)s_cfileRef == NULL) {
+				CSuppressLogging	sc2;							//	protected by LogMutex
+				ScSetReset<bool>	sc3(&s_alert_logsB, true);		//	protected by LogMutex
+				OSStatus			err = noErr;
+				
+				s_cfileRef.SetPath(GetConsoleFilePath());	//	causes log file to be created
+				
+				ERR(s_cfileRef.IsValid() ? (OSStatus)noErr : (OSStatus)fnfErr);
+				
+				if (!err) {
+//					Log("console.log file is valid, attempting to open for append");
 				}
 
-				#if _YAAF_
-					if (!pathStr.empty())
-				#endif
-				s_logP = _wfsopen(pathStr.w_str(), L"a", _SH_DENYWR);
+				CCFLog::trim();
+				
+				ERR(s_cfileRef.fopen("a"));
 
-				if (s_logP == NULL) {
-					SetLogPath(NULL);
-					tryLastErr = GetLastError();
-					tryErrNo = errno;
-
-					SuperString		errStr("Failed to open log file (last err: %d) (errno: %d): <%s>");
-
-					errStr.ssprintf(NULL, (int)tryLastErr, (int)tryErrNo, pathStr.utf8Z());
-
-					CFUserNotificationDisplayNotice(
-						0, kCFUserNotificationStopAlertLevel, NULL, NULL, NULL,
-						CFSTR("Error"), errStr.ref(), NULL);
+				if (err) {
+//					ReportErr("Creating log file, this is very bad, please tell dave", err);
+					s_triedB = true;
 				} else {
-					Logf("opened log file at <%s>\n", pathStr.utf8Z());
-					CFSetLogFile(s_logP);
+					CCFLog_SetLogFile(s_cfileRef);
 				}
 			}
-			
-			log_fileP = s_logP;
-	
-		#endif	//	defined(__WIN32__)
-		
-		if (log_fileP) {
-			
-			#if defined(_KJAMSX_) || _QT_
-				#if OPT_WINOS
-					valStr.Replace(RETURN_STR, "");
-				#endif
 
-				PrependThreadNumber(valStr, i_crB);
-
-				valStr.ScrubSensitiveInfo();
-
-				fprintf(log_fileP, "%s", valStr.utf8Z());
-				fflush(log_fileP);
-
-				#if OPT_WINOS
-					OutputDebugString(valStr.w_str());
-				#endif
-			#else
-				#if _CFTEST_
-					#if __WIN32__
-						valStr.Replace("\r", "");
-						OutputDebugString(valStr.w_str());
-					#endif
-
-					fprintf(log_fileP, "%s", valStr.utf8Z());
-					fflush(log_fileP);
-				#else
-					Log(valStr.utf8Z(), false);
-				#endif
 			#endif
 		}
-	}
-	#else	//	!USE_CFSHOW
-	{
-		#ifndef __WIN32__
-			fflush(stdout);
-		#endif
-	
-		CF_ASSERT("not scrubbing sensitive info" == NULL);
-		//valStr.ScrubSensitiveInfo();
-	
-		CFShow(valRef);
-		if (i_crB) {
-			CFShow(CFSTR("\n"));
-		}
+		#else // OPT_MACOS
+		{
+			int				tryLastErr, tryErrNo;
+			SuperString		tryPathStr;
+			SuperString		pathStr;
 
-		#ifndef __WIN32__
-			fflush(stdout);
-		#endif
+			if (CCFLog::GetLogPath()) {
+				pathStr.Set(CCFLog::GetLogPath());
+				tryPathStr = pathStr;
+			} else {
+				SuperString						relPathStr("../");
+				CFBundleRef						bundleRef(CFBundleGetMainBundle());
+				CCFURL							urlRef(CFBundleCopyExecutableURL(bundleRef));
+				SuperString						testRelPath(CFURLCopyLastPathComponent(urlRef), false);
+
+				#if 0
+					testRelPath.pop_ext();
+					testRelPath.append(" ");
+					testRelPath.append(kJams_LogFileName);
+				#else
+					testRelPath.Set(kJams_LogFileName);
+				#endif
+
+				testRelPath.prepend(relPathStr);
+
+				CCFURL							bundleUrlRef(CFBundleCopyBundleURL(bundleRef));
+				CCFURL							xmlUrlRef(CFURLCreateWithFileSystemPathRelativeToBase(
+					kCFAllocatorDefault, testRelPath.ref(), kCFURLPOSIXPathStyle, false, bundleUrlRef));
+				CCFURL							absUrlRef(CFURLCopyAbsoluteURL(xmlUrlRef));
+
+				pathStr.Set(CFURLCopyFileSystemPath(absUrlRef, kCFURLPlatformPathStyle), false);
+			}
+
+			#if _YAAF_
+				if (!pathStr.empty())
+			#endif
+			
+			CCFLog_SetLogFile(_wfsopen(pathStr.w_str(), L"a", _SH_DENYWR));
+
+			if (CCFLog_GetLogFile() == NULL) {
+				CCFLog::SetLogPath(NULL);
+				tryLastErr = GetLastError();
+				tryErrNo = errno;
+
+				SuperString		errStr("Failed to open log file (last err: %d) (errno: %d): <%s>");
+
+				errStr.ssprintf(NULL, (int)tryLastErr, (int)tryErrNo, pathStr.utf8Z());
+
+				CFUserNotificationDisplayNotice(
+					0, kCFUserNotificationStopAlertLevel, NULL, NULL, NULL,
+					CFSTR("Error"), errStr.ref(), NULL);
+					
+				s_triedB = true;
+			} else {
+				CFSetLogFile(CCFLog_GetLogFile());
+				Logf("opened log file at <%s>\n", pathStr.utf8Z());
+			}
+		}
+		#endif	//	OPT_WINOS
 	}
-	#endif	//	!USE_CFSHOW
+	
+	return CCFLog_GetLogFile();
+}
+
+void CCFLog::operator()(CFTypeRef valRef)
+{
+	if (!CFGetLogging()) return;
+
+	static SuperString		s_safe_percentStr;
+	SuperString				valStr;	valStr.Set_CFType(valRef);
+	FILE					*log_fileP = GetOrCreateLogFile();
+
+	if (s_safe_percentStr.empty()) {
+		s_safe_percentStr.Set(GetSpecialChar(UTF_SpecialChar_FULLWIDTH_PERCENT));
+	}
+
+	valStr.Replace("%", s_safe_percentStr);
+
+	if (i_crB) {
+		valStr.append("\n");
+	}
+
+	PrependThreadNumber(valStr, i_crB);
+
+	if (log_fileP) {
+		#if OPT_WINOS
+			valStr.Replace(RETURN_STR, "");
+		#endif
+
+		valStr.ScrubSensitiveInfo();
+
+		fputs(valStr.utf8Z(), log_fileP);
+		fflush(log_fileP);
+	}
+
+	#if OPT_MACOS
+		fputs(valStr.utf8Z(), stdout);
+	#else
+		OutputDebugString(valStr.w_str());
+	#endif
 }
 
 void CCFLog::operator()(CFStringRef keyRef, CFTypeRef valRef) {
@@ -496,19 +533,26 @@ void CCFLog::operator()(CFStringRef keyRef, CFTypeRef valRef) {
 //	static
 void	CCFLog::close()
 {
-	::fclose(s_logP);
-	s_logP = NULL;
-
-	#if defined(__WIN32__)
+	#if OPT_WINOS
 		CFSetLogFile(NULL);
 	#endif
+
+	{
+		FILE*		log_fileP(CCFLog_GetLogFile());
+		
+		if (log_fileP) {
+			::fclose(log_fileP);
+		}
+
+		CCFLog_SetLogFile(NULL);
+	}
 }
 
 /*****************************************************************************/
 
 #if OPT_KJMAC
 	#include "CocoaFunctions.h"
-#else
+#else	//	OPT_KJMAC
 
 CFXMLTreeRef	CCFXMLTreeCreateFromData(
 	CFDataRef		xmlData, 
@@ -527,12 +571,12 @@ CFXMLTreeRef	CCFXMLTreeCreateFromData(
 
 CFDataRef		CCFPropertyListCreateXMLData(
 	CFPropertyListRef	plist, 
-	CFErrorRef			*errorRefP0)
+	CFErrorRef			*)
 {
 	return CFPropertyListCreateXMLData(kCFAllocatorDefault, plist);
 }
 
-#endif
+#endif	//	!OPT_KJMAC
 
 /********************************************************/
 bool	Read_PList(const CFURLRef &url, CFDictionaryRef *plistP)
@@ -889,6 +933,11 @@ SuperString			CCFDictionary::GetAs_SString	(const char *utf8Z)
 	return SuperString(GetAs_String(utf8Z));
 }
 
+SuperString			CCFDictionary::GetAs_SString	(OSType key)
+{
+	return GetAs_SString(OSTypeToString(key).utf8Z());
+}
+
 CFAbsoluteTime		CCFDictionary::GetAs_TimeFromString(const char *utf8Z, SS_TimeType timeType, CFTimeInterval epochT)
 {
 	SuperString			str(GetAs_String(utf8Z));
@@ -903,6 +952,31 @@ void				CCFDictionary::SetValue_TimeToString(const char *utf8Z, CFAbsoluteTime v
 	str.Set(valueT, timeType, epochT);
 	SetValue(utf8Z, str);
 }
+
+CFAbsoluteTime		CCFDictionary::GetAs_AbsTime	(CFStringRef keyStr)
+{
+	return GetAs_AbsTime(SuperString(keyStr).utf8Z());
+}
+
+CFAbsoluteTime		CCFDictionary::GetAs_AbsTime	(const char *utf8Z)
+{
+	CFDateRef		dateRef(GetAs_Date(utf8Z));
+
+	return CFDateGetAbsoluteTime(dateRef);
+}
+
+void				CCFDictionary::SetValue_AbsTime	(CFStringRef keyStr, CFAbsoluteTime absT)
+{
+	CCFDate			dateRef(CFDateCreate(kCFAllocatorDefault, absT));
+
+	SetValue(keyStr, dateRef.Get());
+}
+
+void				CCFDictionary::SetValue_AbsTime	(const char *utf8Z, CFAbsoluteTime absT)
+{
+	SetValue_AbsTime(SuperString(utf8Z).ref(), absT);
+}
+
 
 CFTypeRef			CCFArray::GetIndValAs_CFType(CFIndex idx)
 {
@@ -1081,6 +1155,11 @@ SInt32				CCFDictionary::GetAs_SInt32	(const char *utf8Z)
 	return valL;
 }
 
+SInt32				CCFDictionary::GetAs_SInt32	(OSType key)
+{
+	return GetAs_SInt32(OSTypeToString(key).utf8Z());
+}
+
 SInt16				CCFDictionary::GetAs_SInt16	(const char *utf8Z, SInt16 defaultS)
 {
 	CFNumberRef		valRef((CFNumberRef)GetValue(utf8Z));
@@ -1252,7 +1331,7 @@ float				CCFDictionary::GetAs_Float		(const char *utf8Z)
 
 void				CCFDictionary::SetValue			(const char *utf8Z, float valF)
 {
-	ScCFReleaser<CFNumberRef>	numberRef(CFNumberCreate(kCFAllocatorDefault, kCFNumberFloatType, &valF));
+	ScCFReleaser<CFNumberRef>	numberRef(CFNumberCreateWithFloat(valF));
 
 	SetValue(utf8Z, numberRef.Get());
 }
@@ -1272,7 +1351,7 @@ double				CCFDictionary::GetAs_Double		(const char *utf8Z)
 
 void				CCFDictionary::SetValue			(const char *utf8Z, double valF)
 {
-	ScCFReleaser<CFNumberRef>	numberRef(CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &valF));
+	ScCFReleaser<CFNumberRef>	numberRef(CFNumberCreateWithDouble(valF));
 
 	SetValue(utf8Z, numberRef.Get());
 }
@@ -1388,7 +1467,7 @@ void				CCFDictionary::SetValue(const char *utf8Z, UInt64 value)
 	SetValue(utf8Z, numberRef.Get());
 }
 
-void			CCFDictionary::SetValue(const char *utf8Z, Ptr valueP)
+void				CCFDictionary::SetValue(const char *utf8Z, Ptr valueP)
 {
 	#if __LP64__
 		SetValue(utf8Z, (UInt64)valueP);
@@ -1397,18 +1476,19 @@ void			CCFDictionary::SetValue(const char *utf8Z, Ptr valueP)
 	#endif
 }
 
-Ptr				CCFDictionary::GetAs_Ptr(const char *utf8Z)
+Ptr					CCFDictionary::GetAs_Ptr(const char *utf8Z)
 {
 	Ptr		ptrP = 
 	
 	#if __LP64__
-		(Ptr)GetAs_UInt64(utf8Z);
+		reinterpret_cast<Ptr>(GetAs_UInt64(utf8Z));
 	#else
-		(Ptr)GetAs_UInt32(utf8Z);
+		reinterpret_cast<Ptr>(GetAs_UInt32(utf8Z));
 	#endif
-	
+
 	return ptrP;
 }
+
 /**********************************************/
 
 void				CCFDictionary::SetValue(const char *utf8Z, SInt16 value)
@@ -1583,16 +1663,18 @@ class ForEach_CopyToJSON {
 					double			valF = CFNumberToDouble((CFNumberRef)valRef);
 
 					valueStr.append(valF, 2);
-					break;
-				}
+				} break;
 				
 				case CFType_NUMBER_INT: {
 					long			valL = CFNumberToLong((CFNumberRef)valRef);
 					
 					valueStr.append(valL);
-					break;
-				}
+				} break;
 				
+				case CFType_NULL: {
+					valueStr.Set("null");
+				} break;
+
 				case CFType_STRING: {
 					valueStr.Set((CFStringRef)valRef, true);
 					
@@ -1600,22 +1682,19 @@ class ForEach_CopyToJSON {
 						valueStr.EscapeJSON();
 						valueStr.Enquote();
 					}
-					break;
-				}
+				} break;
 				
 				case CFType_ARRAY: {
 					CCFArray			array((CFArrayRef)valRef, true);
 					
 					valueStr = array.GetJSON(i_indentI, i_dateFormat);
-					break;
-				}
+				} break;
 				
 				case CFType_DICT: {
 					CCFDictionary		dict((CFDictionaryRef)valRef, true);
 					
 					valueStr = dict.GetJSON(i_indentI, i_dateFormat);
-					break;
-				}
+				} break;
 				
 				case CFType_TIMEZONE: {
 					CF_ASSERT(0);
@@ -1637,21 +1716,20 @@ class ForEach_CopyToJSON {
 							break;
 						}
 					
-						case kJSON_DateFormat_ISO_8601: {
-							//	https://en.wikipedia.org/wiki/ISO_8601
-							//	here's why we use this:
-							//	http://stackoverflow.com/questions/10286204/the-right-json-date-format
-							CF_ASSERT(0);
-							break;
-						}
-							
-						case kJSON_DateFormat_DOT_NET: {
+						case kJSON_DateFormat_JSON: {
 							valueStr.Set(timeT, SS_Time_JSON);
-							valueStr.EscapeJSON();
 							valueStr.Enquote();
 							break;
 						}
 							
+						case kJSON_DateFormat_DOT_NET: {
+							valueStr.Set(timeT, SS_Time_DOT_NET);
+							valueStr.EscapeJSON();
+							valueStr.Enquote();
+							break;
+						}
+
+						//	not supported for reading?
 						case kJSON_DateFormat_DOT_NET_STRIPPED: {
 							timeT += kCFAbsoluteTimeIntervalSince1970;
 							timeT /= kEventDurationMillisecond;
@@ -1659,20 +1737,17 @@ class ForEach_CopyToJSON {
 							break;
 						}
 					}
-					break;
-				}
+				} break;
 				
 				case CFType_BOOL: {
 					bool	setB = (CFBooleanRef)valRef == kCFBooleanTrue;
 					
 					valueStr.Set(setB ? "true" : "false");
-					break;
-				}
+				} break;
 				
 				default: {
-					CF_ASSERT(0);
-					break;
-				}
+					CF_ASSERT("Unknown CFType" == NULL);
+				} break;
 			}
 			
 			if (i_firstB) {
@@ -1899,12 +1974,13 @@ class CFTupleAdder {
 		if (valStr[0] == '"') {
 			sValStr.NoQuotes(false);
 			sValStr.UnEscapeJSON();
+
+			SS_TimeType		timeType(sValStr.GetTimeType());
 			
-			if (sValStr.StartsWith("/")) {
-				//	date only supports kJSON_DateFormat_DOT_NET when reading
-				CFAbsoluteTime		dateT = sValStr.GetAs_CFAbsoluteTime(SS_Time_JSON, kCFAbsoluteTimeIntervalSince1970);
+			if (timeType != SS_Time_NONE) {
+				CFAbsoluteTime		dateT(sValStr.GetAs_CFAbsoluteTime(timeType));
 				CCFDate				dateRef(CFDateCreate(kCFAllocatorDefault, dateT));
-				
+
 				add(dateRef.Get());
 			} else {
 				//	string
@@ -2336,8 +2412,12 @@ int		AssertAlert(const char *msgZ, const char *fileZ, long lineL, bool noThrowB)
 	#ifdef kDEBUG
 		static bool	s_showB = true;
 		if (s_showB) {
-			CFStackTraceLog();
-			CFDebugBreak();
+
+			if (CFDebuggerAttached()) {
+				CFDebugBreak();
+			} else {
+				CFStackTraceLog();
+			}
 		}
 	#endif
 
@@ -2372,12 +2452,10 @@ int		AssertAlert(const char *msgZ, const char *fileZ, long lineL, bool noThrowB)
 }
 #endif
 
-#if !kUseCFLogger
-static bool	s_alert_logsB = false;
-#endif
-
 static bool	s_static_loggingB = true;
 static bool	s_static_log_during_startB = false;
+
+CSuppressLogging::CSuppressLogging() : i_sc(&s_static_loggingB, false) {}
 
 void	CFSetLogDuringStartup(bool logB)
 {
@@ -2393,15 +2471,6 @@ void	CFSetLogging(bool logB)
 {
 	s_static_loggingB = logB;
 }
-
-#if !kUseCFLogger
-class CSuppressLogging {
-	ScSetReset<bool>	i_sc;
-
-	public:
-	CSuppressLogging() : i_sc(&s_static_loggingB, false) {}
-};
-#endif
 
 bool	CFGetLogging()
 {
@@ -2521,6 +2590,22 @@ void			LogDialogInfo(
 	}
 }
 
+#if defined(_KJAMS_)
+void	LogAspect(const char *msgZ, int x, int y)
+{
+	if (x & 0x01) {
+	//	++x;
+	}
+
+	if (y & 0x01) {
+	//	++y;
+	}
+
+	math_reduce(x, y);
+	Logf("%s: %d:%d\n", msgZ, x, y);
+}
+#endif
+
 void		Log(const SuperString& str, bool crB)
 {
 	Log(str.utf8Z(), crB);
@@ -2529,74 +2614,15 @@ void		Log(const SuperString& str, bool crB)
 void		Log(const char *utf8Z, bool crB)
 {
 	if (CFGetLogging()) {
-		SuperString				str(uc(utf8Z));
-		static	SuperString		percentStr;
-		
-		if (percentStr.empty()) {
-			percentStr.Set(UTF8BytesToString(0xEFBC8500));
-		}
-		
-		str.Replace("%", percentStr);
-		
 		#if defined(_KJAMS_) && !defined(_MIN_CF_)
-			CCritical	sc(LogMutex());
+			CCritical		sc(LogMutex());	//	GetSprintfMutex() same thing
 		#endif
-		
-		str.ScrubSensitiveInfo();
 
-		#if kUseCFLogger
+		{
 			CCFLog			logger(crB);
 
-			logger(str.ref());
-		#else
-			PrependThreadNumber(str, crB);
-		
-			{
-				static bool				s_triedB = false;
-				
-				if ((FILE *)s_cfileRef == NULL && !s_triedB) {
-					CSuppressLogging	sc2;							//	protected by LogMutex
-					ScSetReset<bool>	sc3(&s_alert_logsB, true);		//	protected by LogMutex
-					OSStatus			err = noErr;
-					
-					s_cfileRef.SetPath(GetConsoleFilePath());	//	causes log file to be created
-					
-					ERR(s_cfileRef.IsValid() ? (OSStatus)noErr : (OSStatus)fnfErr);
-					
-					if (!err) {
-	//					Log("console.log file is valid, attempting to open for append");
-					}
-
-					CCFLog::trim();
-					
-					ERR(s_cfileRef.fopen("a"));
-
-					if (err) {
-	//					ReportErr("Creating log file, this is very bad, please tell dave", err);
-						s_triedB = true;
-					}
-				}
-
-				if ((FILE *)s_cfileRef) {
-					s_cfileRef.fprintf(str.utf8Z());
-					
-					if (crB) {
-						s_cfileRef.fprintf("\n");
-					}
-				}
-
-				#ifdef kDEBUG
-				{
-					fputs(str.utf8Z(), stdout);
-					
-					if (crB) {
-						fputs("\n", stdout);
-						fflush(stdout);
-					}
-				}
-				#endif
-			} 
-		#endif
+			logger(SuperString(uc(utf8Z)).ref());
+		}
 	}
 }
 
@@ -2638,23 +2664,28 @@ void	IndentLevel(short levelS)
 	Logf(GetIndentString(levelS).utf8Z());
 }
 
-void	Logf(const char *utf8Z,...)
+void	Logf(const char *format_utf8Z,...)
 {
 	if (CFGetLogging()) {
 		va_list 	args;
 
-		va_start(args, utf8Z);
-		char		*sprintfBuf = mt_vsnprintf(utf8Z, args);
+		va_start(args, format_utf8Z);
+		char		*sprintfBuf = mt_vsnprintf(format_utf8Z, args);
 		va_end(args);
 
 		Log(sprintfBuf, false);
 	}
 }
 
-void	IfLog(bool logB, const char *labelZ, const char *utf8Z, bool crB)
+void	IfLog(bool logB, const char *labelZ, const SuperString& str, bool crB)
+{
+	IfLog(logB, labelZ, str.utf8Z(), crB);
+}
+
+void	IfLog(bool logB, const char *label8Z, const char *utf8Z, bool crB)
 {
 	if (logB && CFGetLogging()) {
-		SuperString		str(labelZ);
+		SuperString		str(uc(label8Z));
 		
 		str += ": ";
 		str += SuperString(uc(utf8Z));
@@ -2663,38 +2694,38 @@ void	IfLog(bool logB, const char *labelZ, const char *utf8Z, bool crB)
 	}
 }
 
-void	IfLogf(bool logB, const char *labelZ, const char *utf8Z,...)
+void	IfLogf(bool logB, const char *label8Z, const char *format_utf8Z,...)
 {
 	if (logB && CFGetLogging()) {
 		va_list 	args;
 
-		va_start(args, utf8Z);
-		char		*sprintfBuf = mt_vsnprintf(utf8Z, args);
+		va_start(args, format_utf8Z);
+		char		*sprintfBuf = mt_vsnprintf(format_utf8Z, args);
 		va_end(args);
 
-		IfLog(logB, labelZ, sprintfBuf, false);
+		IfLog(logB, label8Z, sprintfBuf, false);
 	}
 }
 
-SuperString		LogPtr_GetStr(const char *strZ, const void *ptr)
+SuperString		LogPtr_GetStr(const char *str8Z, const void *ptr)
 {
 	SuperString		ptrStr("%s: %s");
 	
-	ptrStr.ssprintf(NULL, strZ, PtrToString(ptr).utf8Z());
+	ptrStr.ssprintf(NULL, str8Z, PtrToString(ptr).utf8Z());
 	return ptrStr;
 }
 
-void			LogPtr(const char *strZ, const void *ptr)
+void			LogPtr(const char *str8Z, const void *ptr)
 {
-	SuperString		ptrStr(LogPtr_GetStr(strZ, ptr));
+	SuperString		ptrStr(LogPtr_GetStr(str8Z, ptr));
 	
 	Logf("%s\n", ptrStr.utf8Z());
 }
 
-void			IfLogPtr(bool ifB, const char *strZ, const void *ptr)
+void			IfLogPtr(bool ifB, const char *str8Z, const void *ptr)
 {
 	if (ifB) {
-		LogPtr(strZ, ptr);
+		LogPtr(str8Z, ptr);
 	}
 }
 
@@ -2705,12 +2736,12 @@ void		CFLogSetLogPath()
 
 	if (pathStr.empty()) {
 		CFileRef		fileRef(CFileRef::kFolder_LOGS);
-		
+
 		pathStr.Set(fileRef.path());
 		pathStr.append(kCFURLPlatformPathSeparator);
 		pathStr.append(uc(kJams_LogFileName));
 
-		#if defined(_QTServer_) || (!defined(kDEBUG) && !defined(_DEBUG))
+		#if defined(_QTServer_) || !(defined(kDEBUG) || defined(_DEBUG))
 		{
 			CFAbsoluteTime	curT(CFAbsoluteTimeGetCurrent());
 			SuperString		dateStr; dateStr.Set(curT, SS_Time_LOG);
@@ -2774,7 +2805,7 @@ CFStringRef		CFCopyLocaleLangKeyCode()
 {
 	CCFArray		arrayRef;
 	
-	#if defined(__WIN32__)
+	#if OPT_WINOS
 		arrayRef.adopt((CFMutableArrayRef)CFLocaleCopyPreferredLanguages());
 	#else
 		arrayRef.adopt((CFMutableArrayRef)CFPreferencesCopyAppValue(CFSTR("AppleLanguages"), kCFPreferencesCurrentApplication));
@@ -2987,6 +3018,40 @@ CFGregorianUnits	CFTimeIntervalGetAsGregorianUnits(CFTimeInterval intervalT)
 	return diffUnits;
 }
 
+void				CFWaitForKeyPress(CFStringRef msgRef)
+{
+	CCFDictionary							paramDict;
+
+	paramDict.SetValue(kCFUserNotificationAlertHeaderKey, msgRef);
+	paramDict.SetValue(kCFUserNotificationAlertMessageKey, CFSTR("Please do this, then press 'Continue'"));
+	paramDict.SetValue(kCFUserNotificationDefaultButtonTitleKey, CFSTR("Continue"));
+
+	SInt32									err(0);
+	ScCFReleaser<CFUserNotificationRef>		notificationRef(CFUserNotificationCreate(
+		kCFAllocatorDefault,
+		0,		//	timeout: 0 = never time out
+		kCFUserNotificationNoteAlertLevel,
+		&err,	//	any error making this dialog?
+		paramDict.ref()));
+
+	if (err) {
+		Logf("Error displaying dialog: %d\n", (int)err);
+		ETX(err);
+	}
+
+	CFOptionFlags							responseFlags(0);
+
+	ERR(CFUserNotificationReceiveResponse(
+		notificationRef,
+		0,					//	no timeout again
+		&responseFlags));	//	we don't care about these
+
+	if (err) {
+		Logf("Error receiving dialog response: %d\n", (int)err);
+		ETX(err);
+	}
+}
+
 CFStringRef			CFTimeIntervalCopyString(CFTimeInterval intervalT)
 {
 	CFGregorianUnits	diffUnits(CFTimeIntervalGetAsGregorianUnits(intervalT));
@@ -2994,9 +3059,42 @@ CFStringRef			CFTimeIntervalCopyString(CFTimeInterval intervalT)
 	return CFGregorianUnitsCopyString(diffUnits);
 }
 
+//	in CoreFoundation, GMT *is defined as* UTC
 CFTimeZoneRef		CFTimeZoneCopyGMT()
 {
 	return CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, 0);
+}
+
+CFDictionaryRef		CFTimeZoneCopyDict(CFTimeZoneRef tz)
+{
+	CCFDictionary		dict;
+	CFAbsoluteTime		absT(CFAbsoluteTimeGetCurrent());
+	CFTimeInterval		intervalF;
+	SuperString			str;
+	
+	str = CFTimeZoneGetName(tz);
+	dict.SetValue(kCFTimeZoneDictKey_Name, str.ref());
+
+	str.Set(CFTimeZoneCopyAbbreviation(tz, absT), false);
+	dict.SetValue(kCFTimeZoneDictKey_Abbreviation, str.ref());
+
+	intervalF = CFTimeZoneGetSecondsFromGMT(tz, absT);
+	dict.SetValue(kCFTimeZoneDictKey_ZoneOffset, intervalF / kEventDurationHour);
+	
+	Boolean				is_dstB(CFTimeZoneIsDaylightSavingTime(tz, absT));
+	dict.SetValue(kCFTimeZoneDictKey_IsDst, !!is_dstB);
+
+	str.Set(CFTimeZoneCopyLocalizedName(
+		tz,
+		is_dstB ? kCFTimeZoneNameStyleDaylightSaving : kCFTimeZoneNameStyleStandard,
+		CFLocaleGetSystem()));
+
+	dict.SetValue(kCFTimeZoneDictKey_LocalizedName, str.ref());
+
+	intervalF = CFTimeZoneGetDaylightSavingTimeOffset(tz, absT);
+	dict.SetValue(kCFTimeZoneDictKey_DstOffset, intervalF / kEventDurationHour);
+
+	return dict.transfer();
 }
 
 UInt16				CFTimeZoneGetCurrentYear()
@@ -3335,7 +3433,7 @@ SuperString		GetSystemVersStr(SystemVersType sysVers)
 
 	switch (sysVers) {
 		default:			versStr += "Unknown System";	break;
-		case kMacOS_System6:versStr = "System 6";			break;
+		case kMacOS_System6:versStr =  "System 6";			break;
 		case kMacOS_10_3:	versStr += "3 (Panther)";		break;
 		case kMacOS_10_4:	versStr += "4 (Tiger)";			break;
 		case kMacOS_10_5:	versStr += "5 (Leopard)";		break;
@@ -3350,7 +3448,8 @@ SuperString		GetSystemVersStr(SystemVersType sysVers)
 		case kMacOS_10_14:	versStr += "14 (Mojave)";		break;
 		case kMacOS_10_15:	versStr += "15 (Catalina)";		break;
 		case kMacOS_11_0:	versStr += "0 (Big Sur)";		break;
-		case kMacOS_11_1:	versStr += "1 (?)";				break;
+		case kMacOS_11_1:	versStr += "1 (Monterey)";		break;
+		case kMacOS_11_2:	versStr += "2 (?)";				break;
 	}
 	
 	return versStr;
@@ -3383,14 +3482,22 @@ void	CFReportUnitTest(const char *utf8Z, OSStatus err)
 
 void	CFSleep(CFTimeInterval durationT)
 {
-	//	CCFLog()(CFSTR("----- starting sleep\n"));
+	bool		continueB(true);
 
-	SInt32		resultL = CFRunLoopRunInMode(kCFRunLoopDefaultMode, durationT, false);
+	#ifdef _KJAMS_
+	continueB = !IsCooperativeThread();
+	#endif
 
-	if (resultL == kCFRunLoopRunTimedOut) {
-		//		CCFLog()(CFSTR("----- Success sleeping!\n"));
-	} else {
-		//		CFReportUnitTest("----- FAILED sleeping!", resultL);
+	if (continueB) {
+		//	CCFLog()(CFSTR("----- starting sleep\n"));
+
+		SInt32		resultL = CFRunLoopRunInMode(kCFRunLoopDefaultMode, durationT, false);
+
+		if (resultL == kCFRunLoopRunTimedOut) {
+			//		CCFLog()(CFSTR("----- Success sleeping!\n"));
+		} else {
+			//		CFReportUnitTest("----- FAILED sleeping!", resultL);
+		}
 	}
 }
 
@@ -3851,6 +3958,11 @@ long		CFNumberToLong(const CFNumberRef &num)
 	return valueL;
 }
 
+CFNumberRef		CFNumberCreateWithDouble(double numberF)
+{
+	return CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &numberF);
+}
+
 CFNumberRef		CFNumberCreateWithFloat(float numberF)
 {
 	return CFNumberCreate(kCFAllocatorDefault, kCFNumberFloatType, &numberF);
@@ -4195,6 +4307,32 @@ CFDateRef	CFDateCreateCurrent()
 {
 	return CFDateCreate(kCFAllocatorDefault, CFAbsoluteTimeGetCurrent());
 }
+
+#if _QT_ && !_JUST_CFTEST_
+QDateTime	CFDateGetQDateTime(CFDateRef dateRef)
+{
+	QDateTime		dateTime;
+
+	if (dateRef) {
+		CFAbsoluteTime					absT			= CFDateGetAbsoluteTime(dateRef);
+		CFTimeInterval					secSinceEpochT	= absT + kCFAbsoluteTimeIntervalSince1970;
+		CFTimeIntervalMilliseconds		msSinceEpochT	= CFSecondsToMilliseconds(secSinceEpochT);
+
+		dateTime = QDateTime::fromMSecsSinceEpoch(msSinceEpochT);
+	}
+
+	return dateTime;
+}
+
+CFDateRef	CFDateCreateFromQDateTime(const QDateTime& dt)
+{
+	CFTimeIntervalMilliseconds		msSinceEpochT	= dt.toMSecsSinceEpoch();
+	CFTimeInterval					secSinceEpochT	= CFMillisecondsToSeconds(msSinceEpochT);
+	CFAbsoluteTime					absT			= secSinceEpochT - kCFAbsoluteTimeIntervalSince1970;
+
+	return CFDateCreate(kCFAllocatorDefault, absT);
+}
+#endif
 
 void		Dict_Set_Date(CFMutableDictionaryRef dict, const char *keyZ, CFDateRef dateRef)
 {
@@ -4943,12 +5081,12 @@ UInt32		CFTickCount()
 
 CFTimeIntervalMilliseconds			CFSecondsToMilliseconds(CFTimeInterval secF)
 {
-	double		milliF(secF * (double)kDurationSecond);
+	CFTimeInterval		milliF(secF * (CFTimeInterval)kDurationSecond);
 
-	return math_round(milliF);
+	return static_cast<CFTimeIntervalMilliseconds>(math_round(milliF));
 }
 
 CFTimeInterval						CFMillisecondsToSeconds(CFTimeIntervalMilliseconds milliI)
 {
-	return milliI / (double)kDurationSecond;
+	return static_cast<CFTimeInterval>(milliI) / static_cast<CFTimeInterval>(kDurationSecond);
 }

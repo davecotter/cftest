@@ -146,6 +146,7 @@ class	CMutex_UCharQue : public CMutex {
 /************************************************/
 class	CNetHTTP;
 
+#if !defined(_ROSE_)
 class	CNet_Completion : public CS_MainThread_AbortProc {
 	protected:
 	CMutex		i_mutex;
@@ -182,6 +183,7 @@ class	CNet_Completion : public CS_MainThread_AbortProc {
 	virtual void	net_operator() { }
 	virtual void	operator()();
 };
+#endif
 
 /************************************************/
 
@@ -205,12 +207,13 @@ class CNetHTTP_ForEach_HeaderKey {
 };
 
 /************************************************/
+#if _PaddleServer_ || _JUST_CFTEST_ || defined(_ROSE_)
+typedef short ScNetThread;
+#endif
+
 class CNetHTTP {
 	SuperString			i_url;
-	
-	#if _YAAF_
-		ScNetThread		i_sc;
-	#endif
+	ScNetThread			i_sc;
 	
 	friend class CNet_Completion;
 	friend class CNet_Timer_StreamTimedOut;
@@ -241,6 +244,7 @@ class CNetHTTP {
 	SuperString			i_next_accessMethodStr;
 	SuperString			i_cur_accessMethodStr;
 	bool				i_use_leftoverB;	//	padding only used for CAS_URL
+	bool				i_completed_err_reportB;
 	short				i_leftOverL;
 	SuperString			i_verb1, i_verb2;
 	
@@ -273,7 +277,9 @@ class CNetHTTP {
 	OSStatus	Download_UCharVec(CCFDictionary& dict, UCharVec *charVecP);
 	OSStatus	Download_String(CCFDictionary& dict, SuperString *resultStrP);
 	OSStatus	Download_String(const SuperString& urlStr, SuperString *resultStrP, bool ignore_sizeB = false);
-	
+
+	static SuperString		Download_String(const SuperString& urlStr, bool ignore_sizeB = false);
+
 	OSStatus	Download_CFData(const SuperString& urlStr, CCFData *refP, bool ignore_sizeB = false);
 
 	static SuperString		GetDate(const SuperString& urlStr, OSStatus *errP0 = NULL);
@@ -299,7 +305,10 @@ class CNetHTTP {
 
 	OSStatus	DownloadCompleted(OSStatus err);
 
+#if defined(_KJAMS_)
 	CAS_URL*		NewDownloadSpool(CCFDictionary& dict);
+#endif
+
 	APP_ForkRef		MT_DownloadToFolder(CCFDictionary& dict);
 };
 
@@ -322,9 +331,13 @@ class CDownloadToFolder {
 
 	virtual void	completion(OSStatus err, CNetHTTP *netP);
 };
-#endif
 
-#ifdef _KJAMS_
+void			RemoteURL_GetEssence(
+	const SuperString&	urlStr, 
+	bool				escapeB, 
+	CSong				*songP,
+	UCharVec			*io_charVec);
+
 class CNetHTTP_Disposer : public CT_Preemptive {
 	CNetHTTP		*i_streamP;
 

@@ -8,6 +8,7 @@
 #define	kLogTenOfTwo		3.321928094887362347870319429489390175864831
 #define	math_log2(_n)		(log10((float)_n) * kLogTenOfTwo)
 #define math_exp2(_n)		(pow(2.0f, (float)_n))
+#define math_square(_n)		(pow((float)_n, 2.0f))
 
 #define HAVE_MATH_ROUND
 #define math_round(_foo) 	((_foo) >= 0 ? ((_foo) + 0.5f) : ((_foo) - 0.5f))

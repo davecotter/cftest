@@ -11,16 +11,39 @@
 #include <set>
 #include <string>
 #include <CoreFoundation/CoreFoundation.h>
+
+#if !_PaddleServer_
+	#if defined(_ROSE_)
+		#include <CFNetwork/CFHTTPMessage.h>
+	#else
+		#include <CFHTTPMessage.h>
+	#endif
+#endif
+
 #include "CCFError.h"
 #include "QDUtils.h"
 
-#if !_QT_
-#define __CFUUID__
+#if _QT_ && !_JUST_CFTEST_
+	#include <QDateTime>
+#else
+	#define __CFUUID__
 #endif
 
 #ifndef CF_OPTIONS
-#define CF_OPTIONS(_type, _name) _type _name; enum
+	#define CF_OPTIONS(_type, _name) _type _name; enum
 #endif
+
+#if _QT_ && !_JUST_CFTEST_
+	#include <QtGlobal>
+
+	#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
+		#define _QT6_	1
+	#else
+		#define _QT6_	0
+	#endif
+
+#endif
+
 
 /******************************************************************************/
 #define		LERP(to_min, to_max, from, from_min, from_max)	\
@@ -28,6 +51,9 @@
 	(double)(to_min) + ((double)((to_max) - (to_min))		\
 		* ((double)((from) - (from_min))					\
 		/ (double)((from_max) - (from_min)))))
+
+#define		LERP_PERCENT(from, from_max) \
+	LERP(0.0f, 1.0f, from, 0.0f, from_max)
 
 #if OPT_WINOS || defined(_rose_spotlight_)
 
@@ -54,6 +80,8 @@ enum {
 	urlDataHHTTPURLErr				= -2131,
 	urlDataHHTTPProtocolErr			= -2129,
 	urlDataHHTTPRedirectErr			= -2132,
+	urlDataHFTPPermissionsErr		= -2141,
+	kURLFileEmptyError				= -30783,
 	invalidIndexErr					= -20002,
 	notExactSizeErr					= -2206,
 	hrMiscellaneousExceptionErr		= -5361,
@@ -149,7 +177,8 @@ static const CFIndex kCFIndexEnd	= -2;
 #define		kMacOS_10_14			0x101400		//	Mojave
 #define		kMacOS_10_15			0x101500		//	Catalina
 #define		kMacOS_11_0				0x110000		//	Big Sur
-#define		kMacOS_11_1				0x110100		//	?
+#define		kMacOS_11_1				0x110100		//	Monterey
+#define		kMacOS_11_2				0x110200		//	?
 
 #define		kMacOS_Current			kMacOS_11_0		//	currently released
 #define		kMacOS_Next				kMacOS_11_1		//	not released yet
@@ -160,11 +189,24 @@ typedef SInt32	SystemVersType;
 SystemVersType	GetSystemVers(void);
 SuperString		GetSystemVersStr(SystemVersType type);
 
-extern const CFTimeInterval kCFAbsoluteTimeIntervalOneMonth;
-
 #define		FourCharQuestionMarks	0x3F3F3F3F	//	'????'
 
+#if __cplusplus >= 201103L
+	#include <memory>
+	template <typename T>
+	using CFAutoPtr = std::unique_ptr<T>;
+#else
+	#if _QT_
+		template <typename T>
+		typedef std::auto_ptr<T>	CFAutoPtr;
+	#else
+		#define	CFAutoPtr			std::auto_ptr	
+	#endif
+#endif
+
+#if !_QT6_
 namespace std {
+
 	template<typename T>
 	T	clamp(const T& in_v, const T& min, const T& max) {
 		T	v(in_v);
@@ -178,6 +220,7 @@ namespace std {
 		return v;
 	}
 };
+#endif
 
 #if OPT_MACOS
 	#define	UNREFERENCED_PARAMETER(_foo)
@@ -217,8 +260,9 @@ namespace std {
 	
 	#if !_PaddleServer_
 	enum CFNetworkErrors {
-	  kCFHostErrorUnknown = 2,		 // Query the kCFGetAddrInfoFailureKey to get the value returned from getaddrinfo; lookup in netdb.h
-	  kCFURLErrorNetworkConnectionLost = -1005
+		kCFHostErrorUnknown					= 2,		 // Query the kCFGetAddrInfoFailureKey to get the value returned from getaddrinfo; lookup in netdb.h
+		kCFURLErrorNetworkConnectionLost	= -1005,
+		kCFErrorHTTPBadURL					= 305,
 	};
 	#endif
 #endif
@@ -436,6 +480,17 @@ typedef std::set<UInt32>			UInt32Set;
 #define	kCFString_KeySeparator		"\\"
 
 /*****************************/
+extern const char*	kCFTimeZoneDictKey_Name;			//	ISO name
+extern const char*	kCFTimeZoneDictKey_DisplayName;
+extern const char*	kCFTimeZoneDictKey_LocalizedName;
+extern const char*	kCFTimeZoneDictKey_LocalizedName_Dst;
+extern const char*	kCFTimeZoneDictKey_Abbreviation;
+extern const char*	kCFTimeZoneDictKey_Abbreviation_Dst;
+extern const char*	kCFTimeZoneDictKey_ZoneOffset;
+extern const char*	kCFTimeZoneDictKey_IsDst;
+extern const char*	kCFTimeZoneDictKey_DstOffset;
+
+/*****************************/
 #define		ENTER_KEY			0x03
 #define		LINEFEED_KEY		'\n'	//	0x0A
 #define		RETURN_KEY			'\r'	//	0x0D
@@ -444,6 +499,11 @@ typedef std::set<UInt32>			UInt32Set;
 extern const char ENTER_STR[];
 extern const char RETURN_STR[];
 extern const char LINEFEED_STR[];
+
+enum {
+	OSType_NONE		= static_cast<OSType>(-1)
+};
+
 /*****************************/
 
 typedef enum {
@@ -511,6 +571,7 @@ OSStatus		Write_PList(
 	CFURLRef			urlRef);
 
 double			CFNumberToDouble(const CFNumberRef &num);
+void			CFWaitForKeyPress(CFStringRef msgRef);
 
 CFStringRef		CFStringCreateWithDate(
 	CFDateRef				dateRef, 
@@ -552,6 +613,7 @@ bool			CFGregorianDateExpired(const CFGregorianDate &expireDate);
 //	gets current year in current time zone
 UInt16				CFTimeZoneGetCurrentYear();
 CFTimeZoneRef		CFTimeZoneCopyGMT();
+CFDictionaryRef		CFTimeZoneCopyDict(CFTimeZoneRef tz);
 
 CFGregorianDate		CFAbsoluteTimeConvertToGregorian(const CFAbsoluteTime& cfTime);
 CFAbsoluteTime		CFAbsoluteTimeCreateFromGregorian(const CFGregorianDate &greg, bool gmtB = false);
@@ -618,6 +680,7 @@ CFStringRef		CFStringCreateWithNumber(long numberL);
 CFStringRef		CFStringCreateWithStd(const std::string &stdStr);
 CFNumberRef		CFNumberCreateWithNumber(long numberL);
 CFNumberRef		CFNumberCreateWithFloat(float numberF);
+CFNumberRef		CFNumberCreateWithDouble(double numberF);
 
 std::string		&UpperString(std::string &str);
 std::string		&LowerString(std::string &str);
@@ -664,12 +727,19 @@ void			Array_SetIndLong(CFMutableArrayRef dict, CFIndex indexL, long valueL);
 typedef enum {
 	kTimeCode_NORMAL, 
 	kTimeCode_PRETTY, 
+	kTimeCode_MEDIUM,
 	kTimeCode_LONG,
 	kTimeCode_LONG_FLOAT
 } kTimeCodeType;
 
 CFTimeInterval	CFDateDifference(CFDateRef newDateRef, CFDateRef oldDateRef);
 CFDateRef		CFDateCreateCurrent();
+
+#if _QT_ && !_JUST_CFTEST_
+QDateTime	CFDateGetQDateTime(CFDateRef date);
+CFDateRef	CFDateCreateFromQDateTime(const QDateTime& dt);
+#endif
+
 void			Dict_Set_Date(CFMutableDictionaryRef dict, const char *keyZ, CFDateRef dateRef);
 CFDateRef		Dict_Copy_Date(CFDictionaryRef dict, const char *keyZ);
 
@@ -839,12 +909,13 @@ class	ScCFReleaser : public ScCFTypeRef<T> {
 	operator CFTypeRef()	{	return _inherited::Get();	}
 };
 
-typedef ScCFReleaser<CFStringRef>	CCFString;
-typedef ScCFReleaser<CFDateRef>		CCFDate;
-typedef ScCFReleaser<CFURLRef>		CCFURL;
-typedef ScCFReleaser<CFTypeRef>		CCFType;
-typedef ScCFReleaser<CFErrorRef>	CCFError;
-typedef ScCFReleaser<CFTimeZoneRef>	CCFTimeZone;
+typedef ScCFReleaser<CFURLRef>			CCFURL;
+typedef ScCFReleaser<CFTypeRef>			CCFType;
+typedef ScCFReleaser<CFDateRef>			CCFDate;
+typedef ScCFReleaser<CFErrorRef>		CCFError;
+typedef ScCFReleaser<CFStringRef>		CCFString;
+typedef ScCFReleaser<CFTimeZoneRef>		CCFTimeZone;
+typedef ScCFReleaser<CFHTTPMessageRef>	CCFHTTPMessage;
 
 /***************************************************************************************/
 class	CDictionaryIterator {
@@ -955,9 +1026,9 @@ inline	void	array_for_each(CFArrayRef array, Function f)
 
 typedef enum {
 	kJSON_DateFormat_NONE,
-	kJSON_DateFormat_ISO_8601,			//	JS.toJSON
+	kJSON_DateFormat_JSON,				//	JS.toJSON
 	kJSON_DateFormat_DOT_NET,			//	DataContractJsonSerializer
-	kJSON_DateFormat_DOT_NET_STRIPPED	//	milliseconds since 1970
+	kJSON_DateFormat_DOT_NET_STRIPPED	//	milliseconds since kCFAbsoluteTimeIntervalSince1970
 } JSON_DateFormatType;
 
 #define		kJSON_Compact	-1 
@@ -972,7 +1043,7 @@ class	CPlistFormat {
 	CPlistFormat(
 		bool					jsonB			= false,
 		int						indentI			= kJSON_Compact,
-		JSON_DateFormatType		dateFormatType	= kJSON_DateFormat_ISO_8601)
+		JSON_DateFormatType		dateFormatType	= kJSON_DateFormat_JSON)
 	:
 		i_jsonB(jsonB), 
 		i_indentI(indentI),
@@ -991,21 +1062,33 @@ class	CFParseProgress {
 };
 
 typedef enum {
+	SS_Time_NONE	= -1,
 	SS_Time_SHORT, 					//	Thu, 23 Jul 2009 15:15:21 GMT
 	SS_Time_LONG, 					//	August 29, 2008 15:36:59 PM PDT
 	SS_Time_LONG_12,				//	August 29, 2008 03:36:59 PM PDT
 	SS_Time_LONG_PRETTY,			//	Thursday, March 29, 2012 - 3:31 PM PDT
-	SS_Time_LOG,					//	2009-01-24 18:20:16 or 2009-11-24 20:00:47.586 -0800, or "2009-11-24T18:20:16Z"
+	SS_Time_LOG,					//	2009-01-24 18:20:16 or 2009-11-24 20:00:47.586 -0800, or SS_Time_JSON
 	SS_Time_COMPACT_DATE_TZ,		//	5/13/2009 PT
 	SS_Time_COMPACT_DATE_ONLY,		//	5/13/2009
 	SS_Time_COMPACT_DATE_REVERSE,	//	2012/09/01
 	SS_Time_NAKED,					//	float, double, or int, 
-	SS_Time_JSON,					//	/Date(1494646923590+0000)/
+	SS_Time_DOT_NET,				//	/Date(1494646923590+0000)/, DataContractJsonSerializer
 	SS_Time_TIMESTAMP,				//	"20120401182543234"	helsinki time
 	SS_Time_LOG2, 					//	"2009-01-24 18:20:16 -0300" helsinki time (hacked)
 	SS_Time_SYSTEM_LONG, 			//	something like SS_Time_LONG_PRETTY
-	
-	SS_Time_NUMTYPES
+
+	//	http://stackoverflow.com/questions/10286204/the-right-json-date-format
+	SS_Time_JSON,					//	"2009-11-24T18:20:16.4313Z"
+
+	SS_Time_SIZE_begin,
+	SS_Time_SIZE_4 = SS_Time_SIZE_begin,	//	"Wednesday, February 21, 2018 6:39 AM"
+	SS_Time_SIZE_3,							//	"February 21, 2018 6:39 AM"
+	SS_Time_SIZE_2,							//	"Feb 21, 2018 6:39 AM"
+	SS_Time_SIZE_1,							//	"2/21/18 6:39 AM"
+	SS_Time_SIZE_0,							//	"2/21/18"
+	SS_Time_SIZE_end,
+
+	SS_Time_NUMTYPES = SS_Time_SIZE_end
 } SS_TimeType;
 
 /*****************************************************/
@@ -1023,9 +1106,9 @@ CFTypeRef		CFType_GetValFromPathKey(
  CCFDictionary		dict(NULL);						//	allocate a dictionary
  CCFDictionary		dict(NULL, false);				//	allocate a dictionary
  
- CCFDictionary		dict(existingDict);				//	xfer ownership (WILL be released in d'tor)
- CCFDictionary		dict(existingDict, false);		//	xfer ownership (WILL be released in d'tor)
- CCFDictionary		dict(existingDict, true);		//	retain dictionary (will NOT be released, caller responsible for releasing)
+ CCFDictionary		dict(existingDict);				//	xfer ownership, for use with "Copy" calls (WILL be released in d'tor)
+ CCFDictionary		dict(existingDict, false);		//	xfer ownership, for use with "Copy" calls (WILL be released in d'tor)
+ CCFDictionary		dict(existingDict, true);		//	retain dictionary, for use with "Get" calls (will NOT be released, caller responsible for releasing)
  
  CCFDictionary		dict(NULL, true);				//	NULL dictionary, ONLY use if next instruction is .[Immutable]AddressOf(), use with legacy C APIs
  */
@@ -1131,18 +1214,24 @@ class CCFDictionary : public ScCFReleaser<CFMutableDictionaryRef> {
 	virtual CFStringRef	GetAs_String	(CFStringRef key);
 	virtual CFStringRef	GetAs_String	(const char *utf8Z);
 	virtual	CFStringRef	GetAs_String	(OSType key);
+
 	SuperString			GetAs_SString	(const char *utf8Z);
+	SuperString			GetAs_SString	(OSType key);
+
+	SInt32				GetAs_SInt32	(const char *utf8Z);
+	SInt32				GetAs_SInt32	(OSType key);
+	UInt32				GetAs_UInt32	(const char *utf8Z)		{ return (UInt32)GetAs_SInt32(utf8Z);	}
+
 	Rect				GetAs_Rect		(const char *utf8Z);
 	bool				GetAs_Bool		(const char *utf8Z, bool defaultB = false);
-	SInt32				GetAs_SInt32	(const char *utf8Z);
-	UInt32				GetAs_UInt32	(const char *utf8Z)		{	return (UInt32)GetAs_SInt32(utf8Z);	}
-	UInt64				GetAs_UInt64	(const char *utf8Z);
-	OSType				GetAs_OSType	(const char *utf8Z);
-	virtual SInt16		GetAs_SInt16	(const char *utf8Z, SInt16 defaultS = 0);
-	UInt16				GetAs_UInt16	(const char *utf8Z)		{	return (UInt16)GetAs_SInt16(utf8Z);	}
-	SInt16				GetAs_SInt16	(OSType key);
 	float				GetAs_Float		(const char *utf8Z);
 	double				GetAs_Double	(const char *utf8Z);
+	UInt64				GetAs_UInt64	(const char *utf8Z);
+	OSType				GetAs_OSType	(const char *utf8Z);
+
+	virtual SInt16		GetAs_SInt16	(const char *utf8Z, SInt16 defaultS = 0);
+	SInt16				GetAs_SInt16	(OSType key);
+	UInt16				GetAs_UInt16	(const char *utf8Z)		{	return (UInt16)GetAs_SInt16(utf8Z);	}
 
 	CFDictionaryRef			GetAs_Dict			(CFStringRef key);
 	CFDictionaryRef			GetAs_Dict			(const char *utf8Z);
@@ -1154,9 +1243,18 @@ class CCFDictionary : public ScCFReleaser<CFMutableDictionaryRef> {
 
 	CFDataRef			GetAs_Data		(const char *utf8Z);
 	CFDateRef			GetAs_Date		(const char *utf8Z);
+	CFAbsoluteTime		GetAs_AbsTime	(CFStringRef keyStr);
+	CFAbsoluteTime		GetAs_AbsTime	(const char *utf8Z);
 	CFGregorianDate		GetAs_GregDate	(const char *utf8Z);
 	RGBColor			GetAs_Color		(const char *utf8Z);
 	Ptr					GetAs_Ptr		(const char *utf8Z);
+	
+	template <typename T>
+	T					GetAs_PtrT(const char *utf8Z)
+	{
+		return reinterpret_cast<T>(GetAs_Ptr(utf8Z));
+	}
+	
 	CFAbsoluteTime		GetAs_TimeFromString(const char *utf8Z, SS_TimeType timeType = SS_Time_LOG, CFTimeInterval epochT = 0);
 
 	/*********************************************/
@@ -1200,6 +1298,8 @@ class CCFDictionary : public ScCFReleaser<CFMutableDictionaryRef> {
 	void				SetValue(const char *utf8Z, float valueF);
 	void				SetValue(const char *utf8Z, double valueF);
 	void				SetValue_TimeToString(const char *utf8Z, CFAbsoluteTime valueT, SS_TimeType timeType = SS_Time_LOG, CFTimeInterval epochT = 0);
+	void				SetValue_AbsTime(CFStringRef keyStr, CFAbsoluteTime valueT);
+	void				SetValue_AbsTime(const char *utf8Z, CFAbsoluteTime valueT);
 	void				SetValue(const char *utf8Z, const SuperString& value);
 	void				SetValue(const char *utf8Z, const RGBColor& value);
 	void				SetValue(const char *utf8Z, Ptr valueP);
@@ -1571,6 +1671,7 @@ bool		Read_XML(const SuperString &pathStr, CCFXmlTree& xml);
 //	logging
 void	Log(const char *strZ, bool crB = true);
 void	Log(const SuperString& str, bool crB = true);
+void	LogAspect(const char *msgZ, int x, int y);
 
 extern "C" void	Logf(const char *str,...);
 
@@ -1585,6 +1686,8 @@ SuperString		YesOrNoStr(const char *msgZ, bool yesB);
 void			LogYesOrNo(const char *msgZ, bool yesB);
 
 void	IfLog(bool logB, const char *labelZ, const char *strZ, bool crB = true);
+void	IfLog(bool logB, const char *labelZ, const SuperString& str, bool crB = true);
+
 void	IfLogf(bool logB, const char *labelZ, const char *str,...);
 
 SuperString		LogPtr_GetStr(const char *strZ, const void *ptr);

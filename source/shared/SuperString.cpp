@@ -17,7 +17,7 @@
 	#include "CTenFive_Funcs.h"
 #endif
 
-#if defined(kDEBUG) || defined(_CFTEST_)
+#if defined(kDEBUG) || defined(_CFTEST_) || defined(rDEBUG)
 	bool	g_debugStringsB = true;
 #else
 	bool	g_debugStringsB = false;
@@ -31,29 +31,25 @@
 
 #if OPT_KJMAC
 	#include "CThreads.h"
-	#include "CApp.h"
 	#include "MessageAlert.h"
+	#include "CLocalize.h"
+
 #else
-
-	#include "SuperString.h"
-
 	#if defined(_CFTEST_)
 		#include <algorithm>
-		
-		#if _QT_ && _KJAMS_
-			#include "CLocalize.h"
-		#endif
 	#else
 		#include "CThreads.h"
-		#include "CLocalize.h"
 		
 		#if _YAAF_
 			#include <XErrorDialogs.h>
+			#include "CLocalize.h"
 		#else
 			#include "MessageAlert.h"
 		#endif
 	#endif
 #endif
+
+#include "SuperString.h"
 
 static CFStringRef		CFStringCreateWithUTF32(const UTF32Char *bufA, size_t utf32CharCountL)
 {
@@ -116,6 +112,7 @@ void		LogErr(const char *utf8Z, OSStatus err, bool crB, bool unixB)
 		&& err != eofErr 
 		&& err != userCanceledErr
 #ifdef _KJAMS_
+		&& !ScSilenceStrangePathWarn::IsSilent()
 		&& err != ERR_Already_Reported
 		&& CFGetLogging()
 #endif
@@ -636,7 +633,7 @@ SuperString		OSTypeToString(OSType osType)
 		str = it->second;
 		
 	} else {
-		if (osType == (OSType)-1) {
+		if (osType == OSType_NONE) {
 			str.Set("-");
 		} else {
 			char	bufAC[5];
@@ -652,7 +649,7 @@ SuperString		OSTypeToString(OSType osType)
 
 OSType		CharToOSType(const char *bufZ, bool convertB)
 {
-	OSType		osType = (OSType)-1;
+	OSType		osType = OSType_NONE;
 	size_t		lenL = strlen(bufZ);
 	
 	if (lenL >= 4) {
@@ -841,7 +838,11 @@ SuperString&	SuperString::UnScramble(short rotateS)
 
 SuperString		UTF8BytesToString(UInt32 bytesL)
 {
-	UInt32			bitEndianL(CFSwapInt32HostToBig(bytesL));
+	UInt32			bitEndianL[2];
+
+	bitEndianL[0] = CFSwapInt32HostToBig(bytesL);
+	bitEndianL[1] = 0;
+
 	SuperString		str((UInt8*)&bitEndianL);
 	
 	return str;
@@ -1078,9 +1079,15 @@ void	SuperString::Set(CFStringRef in_myRef, bool retainB)
 	delete i_pstr;
 	i_pstr = NULL;
 
-	#if kDEBUG || _CFTEST_
+	#if kDEBUG || _CFTEST_ || rDEBUG
 		if (in_myRef && g_debugStringsB) {
-			#if OPT_MACOS
+			#if _QT_
+				#if OPT_MACOS
+					utf8();
+				#else
+					w_str();
+				#endif
+			#elif OPT_MACOS
 				c_str();
 			#else
 				w_str();
@@ -1180,12 +1187,12 @@ SuperString&			SuperString::ScrubSensitiveInfo()
 	return *this;
 }
 
-SuperString&	SuperString::Escape(SuperString allowedStr, SuperString disallowedStr)
+SuperString&	SuperString::Escape(SuperString leaveUnescaped, SuperString alwaysEscape)
 {
 	Set(CFURLCreateStringByAddingPercentEscapes(
 		kCFAllocatorDefault, ref(), 
-		allowedStr.empty() ? NULL : allowedStr.ref(), 
-		disallowedStr.empty() ? NULL : disallowedStr.ref(), 
+		leaveUnescaped.empty() ? NULL : leaveUnescaped.ref(),
+		alwaysEscape.empty() ? NULL : alwaysEscape.ref(),
 		kCFStringEncodingUTF8), false);
 
 	return *this;
@@ -1195,7 +1202,32 @@ void	SuperString::UnEscape()
 {
 	CCFString		emptyStr(CFCopyEmptyString());
 
-	Set(CFURLCreateStringByReplacingPercentEscapes(kCFAllocatorDefault, ref(), emptyStr), false);
+	Set(CFURLCreateStringByReplacingPercentEscapes(
+		kCFAllocatorDefault, ref(), emptyStr), false);
+}
+
+SuperString::SuperString(CFURLRef urlRef)
+{
+	SetNULL();
+
+	//	Percent-escape sequences in the orig urlRef are retained
+	Set(CFURLGetString(urlRef));
+}
+
+CFURLRef		SuperString::CopyAs_URLRef(bool escapeB /* true */) const
+{
+	SuperString		str(*this);
+
+	if (escapeB) {
+		//	probably always want to escape? since creating a SuperString
+		//	from a real CFURLRef leaves escape sequences intact
+
+		//	but double escaping is bad, so if it already IS escaped
+		//	definitely don't do it AGAIN!
+		str.Escape();
+	}
+
+	return CFURLCreateWithString(kCFAllocatorDefault, str.ref(), NULL);
 }
 
 bool			SuperString::IsHexString()
@@ -1482,7 +1514,7 @@ static CFOptionFlags		GetFlags_NormalizeStrings(
 			
 				#ifdef __WIN32__
 					SuperString		str_e("e");
-					SuperString		str_e_grave(UTF8BytesToString(0xC3A90000));
+					SuperString		str_e_grave(GetSpecialChar(UTF_SpecialChar_e_ACUTE));
 					
 					s_has_diacritic_insensitive_compareB = ::CFStringCompare(
 						str_e.ref(), str_e_grave.ref(), (CFOptionFlags)kCFCompareDiacriticInsensitive)
@@ -1595,6 +1627,15 @@ void	OSType_ToLower(OSType *type)
 	char	*testZ = (char *)type;
 	
 	std::for_each(&testZ[0], &testZ[4], CLowerfier());
+}
+
+SuperString&		SuperString::ToUpper()
+{
+	ScCFReleaser<CFMutableStringRef>	capsRef(CFStringCreateMutableCopy(kCFAllocatorDefault, 0, i_ref));
+	
+	CFStringUppercase(capsRef, CFLocaleGetSystem());
+	Set(capsRef);
+	return *this;
 }
 
 SuperString&		SuperString::ToLower()
@@ -2053,13 +2094,12 @@ Ptr				SuperString::GetAs_Ptr() const
 	Ptr		ptrP = 
 	
 	#if __LP64__
-		(Ptr)GetAs_UInt64();
+		reinterpret_cast<Ptr>(GetAs_UInt64());
 	#else
-		(Ptr)GetAs_SInt32();
+		reinterpret_cast<Ptr>(GetAs_SInt32());
 	#endif
 	
 	return ptrP;
-
 }
 
 void				SuperString::Set(SInt64 valueL)
@@ -2148,7 +2188,7 @@ OSType				SuperString::GetAs_OSType(bool justifyB) const
 	return osType;
 }
 
-CFLocaleRef			CFLocaleCreateDefaultEnglishUS()
+static CFLocaleRef			CFLocaleCreateDefaultEnglishUS()
 {
 	return CFLocaleCreate(kCFAllocatorDefault, CFSTR("en_US"));
 }
@@ -2160,14 +2200,13 @@ static const char*	GetFormatStr(SS_TimeType timeType)
 	#define		kTimeFormat_LONG		"MMMM d, y H:mm:ss a z"			//	August 29, 2008 15:36:59 PM PDT
 	#define		kTimeFormat_LONG_12		"MMMM d, y h:mm:ss a z"			//	August 29, 2008 03:36:59 PM PDT
 	#define		kTimeFormat_LONG_PRETTY	"eeee, MMMM d, y - h:mm a z"	//	Thursday, March 29, 2012 - 3:31 PM PDT
-	#define		kTimeFormat_LOG			"y-MM-dd H:mm:ss.SSS Z"			//	2009-01-24 18:20:16 or 2009-11-24 20:00:47.586 -0800, or "2009-11-24T18:20:16Z"
+	#define		kTimeFormat_LOG			"y-MM-dd H:mm:ss.SSS Z"			//	2009-01-24 18:20:16 or 2009-11-24 20:00:47.586 -0800, or kTimeFormat_JSON
 	#define		kTimeFormat_SHORT_CDZ	"M/dd/y z"						//	5/13/2009 PT
 	#define		kTimeFormat_SHORT_CDO	"M/dd/y"						//	5/13/2009
 	#define		kTimeFormat_SHORT_YMD	"y/M/dd"						//	2012/09/01
 	#define		kTimeFormat_timestamp	"yyyyMMddhhmmssSSS"				//	"20120401182543234"	helsinki time
 	#define		kTimeFormat_LOG2		"yyyy-MM-dd hh:mm:ss Z"			//	"2009-01-24 18:20:16 -0300" helsinki time (hacked)
-
-//	#define		kTimeFormat_JavaScript	"unknown"						//	""
+	#define		kTimeFormat_JSON		"y-MM-dd'T'HH:mm:ss.SSS'Z'"		//	"2009-11-24T18:20:16Z"
 //	#define		kTimeFormat_SHORT_12	"EEE, d MMM y h:mm:ss z"		//	Thu, 23 Jul 2009 3:15:21 PM GMT
 
 	
@@ -2184,7 +2223,8 @@ static const char*	GetFormatStr(SS_TimeType timeType)
 		case SS_Time_COMPACT_DATE_REVERSE:		strZ = kTimeFormat_SHORT_YMD;		break;
 		case SS_Time_TIMESTAMP:					strZ = kTimeFormat_timestamp;		break;
 		case SS_Time_LOG2:						strZ = kTimeFormat_LOG2;			break;
-			
+		case SS_Time_JSON:						strZ = kTimeFormat_JSON;			break;
+
 		default: {
 			CF_ASSERT(0);
 			break;
@@ -2192,6 +2232,66 @@ static const char*	GetFormatStr(SS_TimeType timeType)
 	}
 	
 	return strZ;
+}
+
+bool	SuperString::ConformsToDateFormat(SS_TimeType timeType)
+{
+	bool	conformsB(true);
+
+	switch (timeType) {
+
+		default: {
+			CF_ASSERT(0);
+		} break;
+
+		case SS_Time_DOT_NET: {
+			conformsB = StartsWith("/Date(") && EndsWith(")/");
+		} break;
+
+		case SS_Time_JSON: {
+			int		numA[] = {0,1,2,3,5,6,8,9,11,12,14,15,17,18};
+			#define	kNumArraySize	(sizeof(numA) / sizeof(int))
+
+			loop (kNumArraySize) {
+				int		curI(numA[_indexS]);
+
+				if (!CFIsDigit(GetIndChar(curI))) {
+					conformsB = false;
+				}
+			}
+
+			conformsB &= GetIndChar(4) == '-';
+			conformsB &= GetIndChar(7) == '-';
+			conformsB &= GetIndChar(10) == 'T';
+			conformsB &= GetIndChar(13) == ':';
+			conformsB &= GetIndChar(16) == ':';
+			conformsB &= GetIndCharR() == 'Z';
+		} break;
+	}
+
+	return conformsB;
+}
+
+typedef std::vector<SS_TimeType>	SS_TimeTypeVec;
+
+SS_TimeType		SuperString::GetTimeType()
+{
+	SS_TimeType		timeType(SS_Time_NONE);
+	SS_TimeTypeVec	supportedTypes;
+
+	supportedTypes.push_back(SS_Time_DOT_NET);
+	supportedTypes.push_back(SS_Time_JSON);
+
+	for (SS_TimeTypeVec::iterator it(supportedTypes.begin()); it != supportedTypes.end(); ++it) {
+		SS_TimeType curType(*it);
+
+		if (ConformsToDateFormat(curType)) {
+			timeType = curType;
+			break;
+		}
+	}
+
+	return timeType;
 }
 
 /************************/
@@ -2211,59 +2311,150 @@ static CFTimeZoneRef	CFTimeZoneCreateHelsinki()
 }
 
 /************************/
-
-void				SuperString::Set(CFAbsoluteTime absT, SS_TimeType timeType, CFTimeInterval epochT)
+static CFDateFormatterRef		CFDateFormatterCreate_JSON()
 {
+	CCFTimeZone							tz(CFTimeZoneCopyGMT());
+	SuperString							formatStr(GetFormatStr(SS_Time_JSON));
+	ScCFReleaser<CFDateFormatterRef>	formatterRef(CFDateFormatterCreate(
+		kCFAllocatorDefault, CFLocaleGetSystem(), 
+		kCFDateFormatterLongStyle, kCFDateFormatterLongStyle));
+	
+	CFDateFormatterSetFormat(formatterRef, formatStr.ref());
+	CFDateFormatterSetProperty(formatterRef, kCFDateFormatterTimeZone, tz);
+	return formatterRef.transfer();			 
+}
+
+SuperString&				SuperString::Set(
+	CFAbsoluteTime	absT, 
+	SS_TimeType		timeType, 
+	CFTimeInterval	epochT,
+	CFTimeZoneRef	timeZoneRef)
+{
+	ScCFReleaser<CFDateFormatterRef>	formatterRef;
+	CCFTimeZone							localTz;
+	
+	if (timeZoneRef) {
+		localTz.SetAndRetain(timeZoneRef);
+	}
+
 	//	currently not supported
 	CF_ASSERT(epochT == 0);
 	
-	if (timeType == SS_Time_JSON) {
-		absT += kCFAbsoluteTimeIntervalSince1970;
-		absT /= kEventDurationMillisecond;
-		clear();
-		append(absT, 0);
-		append("+0000");
-		
-		prepend("/Date(");
-		append(")/");
-	} else {
-		ScCFReleaser<CFLocaleRef>			localeRef;
-		
-		if (
-			   timeType == SS_Time_LONG_PRETTY
-			|| timeType == SS_Time_SYSTEM_LONG
-		) {
-			localeRef.adopt(CFLocaleCopyCurrent());
-		} else {
-			localeRef.adopt(CFLocaleCreateDefaultEnglishUS());
-		}
-		
-	//	SuperString							localeStr(CFLocaleGetIdentifier(localeRef));
-	//	CCFLog(true)(localeStr.ref());
-		
-		CFDateFormatterStyle		formatStyle(timeType == SS_Time_SYSTEM_LONG 
-			? kCFDateFormatterLongStyle 
-			: kCFDateFormatterFullStyle);
-		
-		ScCFReleaser<CFDateFormatterRef>	formatterRef(CFDateFormatterCreate(
-			kCFAllocatorDefault, localeRef, formatStyle, formatStyle));
-		
+	switch (timeType) {
 
-		if (timeType != SS_Time_SYSTEM_LONG) {
-			SuperString			formatStr(GetFormatStr(timeType));
+		case SS_Time_DOT_NET: {
+			//	always in UTC
+			CF_ASSERT(timeZoneRef == NULL);
 			
-			CFDateFormatterSetFormat(formatterRef, formatStr.ref());
+			absT += kCFAbsoluteTimeIntervalSince1970;
+			absT /= kEventDurationMillisecond;
+			clear();
+			append(absT, 0);
+			append("+0000");
 
-			if (timeType == SS_Time_LOG2 || timeType == SS_Time_TIMESTAMP) {
-				CCFTimeZone			tz(CFTimeZoneCreateHelsinki());
+			prepend("/Date(");
+			append(")/");
+			
+			// $$$ early return! ick!
+			return *this;
+		} break;
 
-				CFDateFormatterSetProperty(formatterRef, kCFDateFormatterTimeZone, tz);
+		case SS_Time_SIZE_0:	//	"2/21/18"
+		case SS_Time_SIZE_1:	//	"2/21/18 6:39 AM"
+		case SS_Time_SIZE_2:	//	"Feb 21, 2018 6:39 AM"
+		case SS_Time_SIZE_3:	//	"February 21, 2018 6:39 AM"
+		case SS_Time_SIZE_4: {	//	"Wednesday, February 21, 2018 6:39 AM"
+			CFDateFormatterStyle		dateFormat(kCFDateFormatterNoStyle);
+			CFDateFormatterStyle		timeFormat(kCFDateFormatterNoStyle);
+
+			switch (timeType) {
+
+				default: break;
+
+				case SS_Time_SIZE_0: {	//	"2/21/18"
+					dateFormat = kCFDateFormatterShortStyle;
+				} break;
+
+				case SS_Time_SIZE_1: {	//	"2/21/18 6:39 AM"
+					dateFormat = kCFDateFormatterShortStyle;
+					timeFormat = kCFDateFormatterShortStyle;
+				} break;
+
+				case SS_Time_SIZE_2: {	//	"Feb 21, 2018 6:39 AM"
+					dateFormat = kCFDateFormatterMediumStyle;
+					timeFormat = kCFDateFormatterShortStyle;
+				} break;
+
+				case SS_Time_SIZE_3: {	//	"February 21, 2018 6:39 AM"
+					dateFormat = kCFDateFormatterLongStyle;
+					timeFormat = kCFDateFormatterShortStyle;
+				} break;
+
+				case SS_Time_SIZE_4: {	//	"Wednesday, February 21, 2018 6:39 AM"
+					dateFormat = kCFDateFormatterFullStyle;
+					timeFormat = kCFDateFormatterShortStyle;
+				} break;
 			}
-		}
 
-		CFDateFormatterSetProperty(formatterRef, kCFDateFormatterIsLenient, kCFBooleanTrue);
-		Set(CFDateFormatterCreateStringWithAbsoluteTime(kCFAllocatorDefault, formatterRef, absT), false);
+			ScCFReleaser<CFLocaleRef>			localeRef(CFLocaleCopyCurrent());
+			
+			formatterRef.adopt(CFDateFormatterCreate(
+				kCFAllocatorDefault, localeRef, dateFormat, timeFormat));
+		} break;
+
+		case SS_Time_JSON: {
+			formatterRef.adopt(CFDateFormatterCreate_JSON());
+		} break;
+
+		default: {
+			ScCFReleaser<CFLocaleRef>			localeRef;
+
+			if (
+				   timeType == SS_Time_LONG_PRETTY
+				|| timeType == SS_Time_SYSTEM_LONG
+			) {
+				localeRef.adopt(CFLocaleCopyCurrent());
+			} else {
+				localeRef.adopt(CFLocaleCreateDefaultEnglishUS());
+			}
+
+		//	SuperString							localeStr(CFLocaleGetIdentifier(localeRef));
+		//	CCFLog(true)(localeStr.ref());
+
+			CFDateFormatterStyle		formatStyle(timeType == SS_Time_SYSTEM_LONG
+				? kCFDateFormatterLongStyle
+				: kCFDateFormatterFullStyle);
+
+			formatterRef.adopt(CFDateFormatterCreate(
+				kCFAllocatorDefault, localeRef, formatStyle, formatStyle));
+
+			if (timeType != SS_Time_SYSTEM_LONG) {
+				SuperString			formatStr(GetFormatStr(timeType));
+
+				CFDateFormatterSetFormat(formatterRef, formatStr.ref());
+
+				if (timeType == SS_Time_LOG2 || timeType == SS_Time_TIMESTAMP) {
+					localTz.SetAndRetain(CFTimeZoneCreateHelsinki());
+				}
+			}
+
+			CFDateFormatterSetProperty(formatterRef, kCFDateFormatterIsLenient, kCFBooleanTrue);
+		} break;
 	}
+
+	if (localTz.ref() == NULL) {
+		localTz.adopt(CFTimeZoneCopyDefault());
+	}
+	
+	CF_ASSERT(formatterRef.ref());
+	
+	CFDateFormatterSetProperty(
+		formatterRef, kCFDateFormatterTimeZone, localTz.ref());
+
+	Set(CFDateFormatterCreateStringWithAbsoluteTime(
+		kCFAllocatorDefault, formatterRef, absT), false);
+
+	return *this;
 }
 
 
@@ -2279,14 +2470,24 @@ void				SuperString::Set(CFAbsoluteTime absT, SS_TimeType timeType, CFTimeInterv
 	so it seems like no bug.  but there is a bug, in both
 */
 
-CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(SS_TimeType timeType, CFTimeInterval epochT) const
+CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(
+	SS_TimeType		timeType, 
+	CFTimeInterval	epochT,
+	CFTimeZoneRef	timeZoneRef) const
 {
 	CFAbsoluteTime		timeT = 0;
 	
 	if (timeType == SS_Time_NAKED) {
 		timeT = GetAs_Double() - epochT;
+		CF_ASSERT(timeZoneRef == NULL);	//	always GMT
 		
 	} else if (timeType == SS_Time_JSON) {
+		ScCFReleaser<CFDateFormatterRef>	formatterRef(CFDateFormatterCreate_JSON());
+
+		CFDateFormatterGetAbsoluteTimeFromString(formatterRef, ref(), NULL, &timeT);
+		CF_ASSERT(timeZoneRef == NULL);	//	always GMT
+		
+	} else if (timeType == SS_Time_DOT_NET) {
 		SuperString		dateStr(*this);
 		const char		*s_dateStartZ = "/Date(";
 		
@@ -2301,6 +2502,7 @@ CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(SS_TimeType timeType, CFTimeIn
 		timeT = dateStr.GetAs_Double();
 		timeT *= kEventDurationMillisecond;
 		timeT -= epochT;
+		CF_ASSERT(timeZoneRef == NULL);	//	always GMT
 		
 	} else {
 		ScCFReleaser<CFLocaleRef>			localeRef(CFLocaleCreateDefaultEnglishUS());
@@ -2325,6 +2527,9 @@ CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(SS_TimeType timeType, CFTimeIn
 				tzStr.prepend(".000 ");
 				timeStr.append(tzStr);
 			}
+			
+			CF_ASSERT(timeZoneRef == NULL);	//	always GMT
+			
 		} else if (timeType == SS_Time_LOG2) {
 			SuperString		tempStr(timeStr);
 			
@@ -2333,35 +2538,29 @@ CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(SS_TimeType timeType, CFTimeIn
 			if (tempStr.GetIndChar() != '+') {
 				timeStr.append(CFTimeZoneGetHelsinkiOffsetStr());
 			}
+			CF_ASSERT(timeZoneRef == NULL);	//	always GMT
+			
 		} else if (timeType == SS_Time_TIMESTAMP) {
 			formatStr.append(" Z");
 			timeStr.append(CFTimeZoneGetHelsinkiOffsetStr());
+			CF_ASSERT(timeZoneRef == NULL);	//	always GMT
 		}
 
 		CFDateFormatterSetProperty(formatterRef, kCFDateFormatterIsLenient, kCFBooleanTrue);
 		CFDateFormatterSetFormat(formatterRef, formatStr.ref());
 		
 		{
-			CCFTimeZone			tz(CFTimeZoneCopyDefault());
+			CCFTimeZone				localTz;
+			
+			if (timeZoneRef) {
+				localTz.SetAndRetain(timeZoneRef);
+			} else {
+				localTz.adopt(CFTimeZoneCopyDefault());
+			}
 
-			CFDateFormatterSetProperty(formatterRef, kCFDateFormatterTimeZone, tz);
+			CFDateFormatterSetProperty(formatterRef, kCFDateFormatterTimeZone, localTz);
 			CFDateFormatterGetAbsoluteTimeFromString(formatterRef, timeStr.ref(), NULL, &timeT);
 		}
-		
-/*
-		CFAbsoluteTime		gmtT;
-		
-		{
-			CCFTimeZone			tz(CFTimeZoneCopyGMT());
-
-			CFDateFormatterSetProperty(formatterRef, kCFDateFormatterTimeZone, tz);
-			CFDateFormatterGetAbsoluteTimeFromString(formatterRef, timeStr.ref(), NULL, &gmtT);
-		}
-		
-		if (gmtT != timeT) {
-			int i = 0;
-		}
-*/
 	}
 	
 	return timeT;
@@ -2605,14 +2804,29 @@ void	SuperString::Set_CFType(CFTypeRef cfType)
 	}
 }
 
-SuperString&		SuperString::ToUpper()
+#if _QT_ && !_JUST_CFTEST_
+// static
+SuperString		SuperString::GetBestPrettyDate(
+	CFDateRef		dateRef,
+	const Rect&		frameR,
+	QFontMetricsF&	metricsF)
 {
-	ScCFReleaser<CFMutableStringRef>	capsRef(CFStringCreateMutableCopy(kCFAllocatorDefault, 0, i_ref));
+	SuperString			dateStr;
+	CFAbsoluteTime		absT(CFDateGetAbsoluteTime(dateRef));
+	int					widthI(QD_RectWidth(frameR));
 	
-	CFStringUppercase(capsRef, CFLocaleGetSystem());
-	Set(capsRef);
-	return *this;
+	loop_range (SS_Time_SIZE_begin, SS_Time_SIZE_end) {
+
+		dateStr.Set(absT, static_cast<SS_TimeType>(_indexS));
+
+		if (metricsF.horizontalAdvance(dateStr) <= widthI) {
+			break;
+		}
+	}
+
+	return dateStr;
 }
+#endif
 
 char *			CopyDoubleToC(double valF, char *bufZ, short precisionS)
 {
@@ -2737,6 +2951,35 @@ void		IncrementNumberAtEndOfString(SuperString *strP)
 	
 	strP->Set(ustr);
 }
+
+SuperString&	SuperString::IncNumberAtEnd()
+{
+	IncrementNumberAtEndOfString(this);
+	return *this;
+}
+
+SuperString&	SuperString::RemoveNumberAtEnd()
+{
+	ustring		ustr(utf8());
+	size_t		startOfNumS = ustr.size();
+
+	while (startOfNumS && CFIsDigit(ustr[startOfNumS - 1])) {
+		startOfNumS--;
+	}
+
+	if (startOfNumS != ustr.size()) {
+
+		if (startOfNumS && ustr[startOfNumS - 1] == ' ') {
+			--startOfNumS;
+		}
+
+		ustr.resize(startOfNumS);
+		Set(ustr);
+	}
+
+	return *this;
+}
+
 
 #define	kStarChar	'*'
 
@@ -2913,18 +3156,30 @@ SuperString&		SuperString::Smarten()
 	bool		openB = true;
 	UTF32Char	openCh(0x201C);
 	UTF32Char	closeCh(0x201D);
-	
+	UTF32Char	open1Ch(0x2018);
+	UTF32Char	close1Ch(0x2019);
+
 	for (UTF32Vec::iterator it(charVec.begin()); it != charVec.end(); ++it) {
 		UTF32Char&	ch(*it);
 		
 		if (ch == '"') {
-			
+
 			if (openB) {
 				ch = openCh;
 			} else {
 				ch = closeCh;
 			}
-			
+
+			openB = !openB;
+
+		} else if (ch == '\'') {
+
+			if (openB) {
+				ch = open1Ch;
+			} else {
+				ch = close1Ch;
+			}
+
 			openB = !openB;
 		}
 	}
@@ -2948,23 +3203,71 @@ SuperString&		SuperString::UnderScoresToSpaces()
 	return Replace("_", " ");
 }
 	
-#define		QUOTE_CHAR	'\"'
-
-SuperString&		SuperString::Enquote(bool smartB)
+SuperString&		SuperString::Enquote(EnquoteType quoteType, bool only_if_notB)
 {
+	#define			QUOTE_CHAR			'\"'
+	#define			SINGLE_QUOTE_CHAR	'\''
 	SuperString		quotesStr;
 	
-	quotesStr.append(QUOTE_CHAR);
-	quotesStr.append(QUOTE_CHAR);
-	
-	if (smartB) {
-		quotesStr.Smarten();
+	if (quoteType < EnquoteType_SINGLE_PLAIN) {
+		quotesStr.append(QUOTE_CHAR);
+		quotesStr.append(QUOTE_CHAR);
+	} else if (quoteType < EnquoteType_GRAVE) {
+		quotesStr.append(SINGLE_QUOTE_CHAR);
+		quotesStr.append(SINGLE_QUOTE_CHAR);
+	}
+
+	switch (quoteType) {
+
+		case EnquoteType_PLAIN:
+		case EnquoteType_SINGLE_PLAIN: {
+			// done!
+		} break;
+
+		case EnquoteType_SMART:
+		case EnquoteType_SINGLE_SMART: {
+			quotesStr.Smarten();
+		} break;
+
+		case EnquoteType_GRAVE: {
+			quotesStr.append("``");
+		} break;
+
+		case EnquoteType_PARENS: {
+			quotesStr.append("()");
+		} break;
+
+		case EnquoteType_PERCENTS: {
+			quotesStr.append("%%");
+		} break;
+
+		case EnquoteType_SPACES: {
+			quotesStr.append("  ");
+		} break;
+
+		case EnquoteType_NO_BREAK_SPACES: {
+			SuperString			nbs(GetSpecialChar(UTF_SpecialChar_NO_BREAK_SPACE));
+			
+			quotesStr += nbs + nbs;
+		} break;
 	}
 	
-	prepend(quotesStr.ww_pop_front());
-	append(quotesStr);
+	SuperString		openingStr(quotesStr.ww_pop_front());
+	
+	if (!only_if_notB || !StartsWith(openingStr)) {
+		prepend(openingStr);
+	}
+
+	if (!only_if_notB || !EndsWith(openingStr)) {
+		append(quotesStr);
+	}
 	
 	return *this;
+}
+
+SuperString			SuperString::Quoted(EnquoteType quoteType) const
+{
+	return SuperString(*this).Enquote(quoteType);
 }
 
 
@@ -3035,6 +3338,11 @@ SuperString&		SuperString::NoQuotes(bool recoverB)
 	return *this;
 }
 
+SuperString&		SuperString::Enspace()
+{
+	return Enquote(EnquoteType_NO_BREAK_SPACES, true);
+}
+
 SuperString		TruncEscapedToNum(size_t numS, SuperString str)
 {
 	bool			doneB = false;
@@ -3084,4 +3392,46 @@ CFDictionaryRef		CopyStringMapToDictionary(CFDictionaryRef dictRef)
 	UNREFERENCED_PARAMETER(dictRef);
 	CF_ASSERT(0);
 	return NULL;
+}
+
+typedef std::map<UTF_SpecialChar, UInt32>	SpecialCharToUTF8Map;
+
+static SpecialCharToUTF8Map		s_charToUTF8Map;
+
+SuperString		GetSpecialChar(UTF_SpecialChar charType)
+{
+	if (s_charToUTF8Map.empty()) {
+		s_charToUTF8Map[UTF_SpecialChar_ZH_COLON]				= 0xEFBC9A00;
+		s_charToUTF8Map[UTF_SpecialChar_HYPHEN]					= 0xE2809000;
+		s_charToUTF8Map[UTF_SpecialChar_RED_ALERT]				= 0xF09F9AA8;
+		s_charToUTF8Map[UTF_SpecialChar_FULLWIDTH_PERCENT]		= 0xEFBC8500;
+		s_charToUTF8Map[UTF_SpecialChar_NO_BREAK_SPACE]			= 0xC2A00000;
+		s_charToUTF8Map[UTF_SpecialChar_SIX_PER_EM_SPACE]		= 0xE2808600;
+		s_charToUTF8Map[UTF_SpecialChar_EM_DASH]				= 0xE2809400;
+		s_charToUTF8Map[UTF_SpecialChar_EN_DASH]				= 0xE2809300;
+		s_charToUTF8Map[UTF_SpecialChar_FIGURE_DASH]			= 0xE2809200;
+		s_charToUTF8Map[UTF_SpecialChar_MINUS_SIGN]				= 0xE2889200;
+		s_charToUTF8Map[UTF_SpecialChar_KEY_CHANGE_FLAT]		= 0xE299AD00;
+		s_charToUTF8Map[UTF_SpecialChar_KEY_CHANGE_SHARP]		= 0xE299AF00;
+		s_charToUTF8Map[UTF_SpecialChar_KEY_CHANGE_BAR]			= 0xE296AD00;
+		s_charToUTF8Map[UTF_SpecialChar_KEY_CHANGE_DIAMOND]		= 0xE299A200;
+		s_charToUTF8Map[UTF_SpecialChar_KEY_CHANGE_TRIANGLE]	= 0xE296B300;
+		s_charToUTF8Map[UTF_SpecialChar_LETTER_YOO]				= 0xF09D978E;
+		s_charToUTF8Map[UTF_SpecialChar_EM_SPACE]				= 0xE2808300;
+		s_charToUTF8Map[UTF_SpecialChar_e_ACUTE]				= 0xC3A90000;
+		s_charToUTF8Map[UTF_SpecialChar_SMALL_ASTERISK]			= 0xEFB9A100;
+		s_charToUTF8Map[UTF_SpecialChar_BLACK_DOWN_TRIANGLE]	= 0xe296be00;
+		s_charToUTF8Map[UTF_SpecialChar_COPYRIGHT]				= 0xC2A90000;
+	}
+
+	#ifdef kDEBUG
+		CF_ASSERT(s_charToUTF8Map.find(charType) != s_charToUTF8Map.end());
+	#endif
+
+	return UTF8BytesToString(s_charToUTF8Map[charType]);
+}
+
+SuperString		GetHyphen()
+{
+	return GetSpecialChar(UTF_SpecialChar_HYPHEN);
 }

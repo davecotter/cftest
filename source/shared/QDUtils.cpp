@@ -24,6 +24,25 @@ void	QD_SetRect(Rect *r, short left, short top, short right, short bottom)
 	r->bottom = bottom;
 }
 
+Rect		QD_GetRect(short left, short top, short right, short bottom)
+{
+	Rect		frameR;
+
+	QD_SetRect(&frameR, left, top, right, bottom);
+	return frameR;
+}
+
+Rect		QD_GetRect(const Point& topLeft, const Point& botRight)
+{
+	return QD_GetRect(topLeft.h, topLeft.v, botRight.h, botRight.v);
+}
+
+Rect		QD_GetRectFromSize(const Point& widHeight)
+{
+	return QD_GetRect(QD_GetNullPoint(), widHeight);
+}
+
+
 void	QD_OffsetRect(Rect *r, short x, short y)
 {
 	r->left += x;
@@ -110,9 +129,14 @@ void		QD_SetRectSize(Rect& ioR, const Point& sizePt)
 	QD_SetRectHeight(ioR, sizePt.v);
 }
 
-void		QD_SetRectPos(Rect& ioR, Point posPt)
+void		QD_SetRectPos(Rect& ioR, SInt32 hPos, SInt32 vPos)
 {
-	QD_OffsetRect(&ioR, -ioR.left + posPt.h, -ioR.top + posPt.v);
+	QD_OffsetRect(&ioR, -ioR.left + hPos, -ioR.top + vPos);
+}
+
+void		QD_SetRectPos(Rect& ioR, const Point& posPt)
+{
+	QD_SetRectPos(ioR, posPt.h, posPt.v);
 }
 
 Point		QD_RectPos(const Rect& ioR)
@@ -187,7 +211,7 @@ RectVec		QD_DiffRect(const Rect& lhsR, const Rect& rhsR)
 	rectVec.push_back(MakeRect( b, c, g, h ));
 
 	// decide which corners
-	if( lhsR.left == a && lhsR.top == e || rhsR.left == a && rhsR.top == e ) {
+	if ((lhsR.left == a && lhsR.top == e) || (rhsR.left == a && rhsR.top == e)) {
 		// corners 0 and 7
 		rectVec.push_back(MakeRect( a, b, e, f ));
 		rectVec.push_back(MakeRect( c, d, g, h ));

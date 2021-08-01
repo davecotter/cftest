@@ -6,9 +6,9 @@
 
 #ifdef _CFTEST_
 	#ifdef __WIN32__
+		#include <numeric>	//	including here avoids compile warning about conflict with "loop" macro (for statement)
 		#define OPT_WINOS	1
 		#define OPT_MACOS	0
-//		#include <MacTypes.h>
 		#include <CFNetwork.h>
 	#else
 		#define OPT_MACOS	1

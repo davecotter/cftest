@@ -3,14 +3,15 @@
 #include "CNetHTTP.h"
 
 #ifndef __ppc__
-#include <CFNetwork/CFHTTPStream.h>
-#include <CFNetwork/CFSocketStream.h>
+	#include <CFNetwork/CFHTTPStream.h>
+	#include <CFNetwork/CFSocketStream.h>
 #endif
 
 #if defined(_KJAMS_)
 	#include "PrefKeys_p.h"
 	#include "CWindow.h"
 	#include "CTaskMgr.h"
+	#include "CNetHTTPClient.h"
 #endif
 
 #define		kVeryLongDebugClientTimeout		0
@@ -42,7 +43,16 @@ CFRunLoopRef	GetMainRunLoop()
 	CFRunLoopRef		runLoopRef(NULL);
 	
 	#ifdef _KJAMS_
-		runLoopRef = gApp->GetMainRunLoop();
+		if (CNetHTTPClient::IsMyThread()) {
+			runLoopRef = CFRunLoopGetCurrent();
+			
+		} else {
+			if (!CNetHTTPClient::Get()) {
+				FatalAlert("CNetHTTPClient not initted!");
+			}
+			
+			runLoopRef = CNetHTTPClient::Get()->GetRunLoop();
+		}
 	#else
 		runLoopRef = CFRunLoopGetCurrent();
 	#endif
@@ -116,6 +126,7 @@ void		CNetHTTP::realloc()
 	i_terminateEventType	= kCFStreamEventTimedOut;
 	i_terminateErr.Set(noErr);
 	i_use_leftoverB			= false;
+	i_completed_err_reportB = true;
 	i_leftOverL				= -1;
 	i_statusCode			= kCFURLStatusCode_NONE;
 	i_downloaded_sizeL.Set(0);
@@ -212,7 +223,9 @@ void		CNetHTTP::abort()
 	RequestTermination(GetTimer(), kCFStreamUserCanceled);
 }
 
-static	void	TerminateStream(CFReadStreamRef& streamRef)
+static	void	TerminateStream(
+	CFReadStreamRef&	streamRef,
+	CFRunLoopRef		runLoopRef)
 {
 	if (streamRef) {
 		//***  ALWAYS set the stream client (notifier) to NULL if you are releaseing it
@@ -225,7 +238,7 @@ static	void	TerminateStream(CFReadStreamRef& streamRef)
 		
 		//	now we can unschedule, close, and finally release the stream
 		//S_LogCount(streamRef, "streamRef: CFReadStreamUnscheduleFromRunLoop");
-		CFReadStreamUnscheduleFromRunLoop(streamRef, GetMainRunLoop(), kCFRunLoopCommonModes);
+		CFReadStreamUnscheduleFromRunLoop(streamRef, runLoopRef, kCFRunLoopCommonModes);
 
 		//S_LogCount(streamRef, "streamRef: CFReadStreamClose");
 		CFReadStreamClose(streamRef);
@@ -244,14 +257,24 @@ static	void	TerminateStream(CFReadStreamRef& streamRef)
 			PostAlert(msg.utf8Z());
 		}
 
-		CFReleaseDebug(streamRef);			
+		CFReleaseDebug(streamRef);
+		
+		#ifdef _KJAMS_
+		if (CNetHTTPClient::OnePerThread()) {
+			//	i do not know why this needs to be done, i was under the impression
+			//	that unscheduling the stream reader would be sufficient for the runloop
+			//	to run out of things to do, and exit itself?
+			CFRunLoopStop(runLoopRef);
+		}
+		#endif
 
 		//streamRef = NULL;
 	}
 }
 
 #ifndef _KJAMS_
-	CFReadStreamRef		i_streamRef = NULL;
+	CFReadStreamRef		s_streamRef = NULL;
+	CFRunLoopRef		s_runLoopRef = NULL;
 #endif
 
 void 	CNetHTTP::RequestTermination(CT_Timer *timerP, CFStreamEventType eventType)
@@ -262,7 +285,7 @@ void 	CNetHTTP::RequestTermination(CT_Timer *timerP, CFStreamEventType eventType
 		ReportErrors();
 	}
 
-#ifdef _KJAMS_
+	#ifdef _KJAMS_
 		if (timerP == NULL) {
 			//	CF_ASSERT(timerP);
 			//	user can press cancel before the request has even been sent (no timer yet)
@@ -274,7 +297,7 @@ void 	CNetHTTP::RequestTermination(CT_Timer *timerP, CFStreamEventType eventType
 		}
 	#else	//	_KJAMS_
 		UNREFERENCED_PARAMETER(timerP);
-		TerminateStream(i_streamRef);
+		TerminateStream(s_streamRef, s_runLoopRef);
 		Completion(i_terminateEventType);
 	#endif	//	_KJAMS_
 	
@@ -288,12 +311,19 @@ void 	CNetHTTP::RequestTermination(CT_Timer *timerP, CFStreamEventType eventType
 class CNet_Timer_StreamTimedOut : public CT_Timer {
 	CNetHTTP			*i_netP;
 	CFReadStreamRef		i_streamRef;
+	CFRunLoopRef		i_runLoopRef;
 
 	public:
-	CNet_Timer_StreamTimedOut(EventTimerInterval durationF, CNetHTTP *netP, CFReadStreamRef streamRef) : 
+	CNet_Timer_StreamTimedOut(
+		EventTimerInterval	durationF, 
+		CNetHTTP			*netP, 
+		CFReadStreamRef		streamRef,
+		CFRunLoopRef		runLoopRef
+	) : 
+		CT_Timer(NO_KILL "Stream Timeout", durationF),
 		i_netP(netP), 
 		i_streamRef(streamRef), 
-		CT_Timer(NO_KILL "Stream Timeout", durationF)
+		i_runLoopRef(runLoopRef)
 	{
 		call();
 	}
@@ -302,7 +332,7 @@ class CNet_Timer_StreamTimedOut : public CT_Timer {
 	
 	OSStatus		operator()()
 	{
-		TerminateStream(i_streamRef);
+		TerminateStream(i_streamRef, i_runLoopRef);
 		i_netP->i_timeOutRef = 0;
 		i_descZ = &i_descZ[strlen(NO_KILL)];
 		
@@ -366,10 +396,6 @@ void		CNetHTTP::CB_CNetHTTP_ReadStream(CFReadStreamRef incomingStreamRef, CFStre
 	}
 	#endif
 
-	if (eventEndB) {
-		int i = 0;
-	}
-
 	if (!(bytesAvailB || eventEndB || eventErrorB)) {
 		if (IsLogging()) {
 			Logf("no bytes, but not end. event type: %d\n", (int)eventType);
@@ -418,6 +444,18 @@ void		CNetHTTP::CB_CNetHTTP_ReadStream(CFReadStreamRef incomingStreamRef, CFStre
 			if (msgRef.Get()) {			
 				if (i_statusCode == kCFURLStatusCode_NONE) {
 					i_statusCode = (UInt32)CFHTTPMessageGetResponseStatusCode(msgRef);
+					
+					if (i_statusCode >= kCFURLStatusCode_BAD_REQUEST) {
+						eventType = kCFStreamEventErrorOccurred;
+						terminateB = true;
+						eventErrorB = true;
+
+						if (i_statusCode == kCFURLStatusCode_NOT_FOUND) {
+							i_terminateErr.Set(kCFErrorHTTPBadURL);
+						} else {
+							i_terminateErr.Set(kNSpHostFailedErr);
+						}
+					}
 				}
 
 				if (i_incoming_headerDict.empty()) {
@@ -543,6 +581,21 @@ void	CNetHTTP::ReportErrors()
 		
 		case kCFStreamEventErrorOccurred: {
 			SuperString			errStr;
+			
+			/*
+				right here: CNetHTTP::Completion() actually does some error
+				tranlsation, why don't factor and we use that here?
+				big testing hit however
+			*/
+			
+			if (i_dataQue.size() == 1) {
+				#ifdef kDEBUG
+					//	if you hit this assert, turn it into a real error
+					//	by setting i_terminateErr at the source
+					CF_ASSERT(0);
+					i_terminateErr.Set(kNSpHostFailedErr);
+				#endif
+			}
 
 			switch (i_terminateErr.Get()) {
 
@@ -550,28 +603,39 @@ void	CNetHTTP::ReportErrors()
 					errStr = SSLocalize("kJams was unable to get size of download.", "error string");
 				} break;
 
+				case kCFErrorHTTPBadURL:
+				case kNSpHostFailedErr:
 				case notEnoughDataErr: {
-					errStr = SSLocalize("When downloading, did not recieve all data.", "error string");
-				} break;
-
-				default: {
-					if (i_dataQue.size() == 1) {
-						#ifdef kDEBUG
-							//	if you hit this assert, turn it into a real error
-							//	by setting i_terminateErr at the source
-							CF_ASSERT(0);
-						#endif
-					} else break;
-				} // NO BREAK!!
-						
-				case kNSpHostFailedErr: {
-					errStr = SSLocalize("Could not connect to server. The server may be offline. Are you connected to the Internet?", "error string");
+					#if !_PaddleServer_ && !_JUST_CFTEST_
+						errStr = MacErrToStr(i_terminateErr.Get());
+					#endif
 				} break;
 			}
+			
+			//	here we ONLY report on the above 3 types of errors
+			//	other errors are handled / reported elsewhere
 
 			if (!errStr.empty()) {
-				errStr.prepend(": ");
-				errStr.prepend(SSLocalize("Error", "prepended on a message to indicate failure state"));
+				SuperString		prefixStr(SSLocalize("Error", "prepended on a message to indicate failure state"));
+			
+				prefixStr.append(": ");
+				
+				errStr.prepend(prefixStr);
+				errStr.append(". (");
+				
+				if (i_verb1.empty()) {
+					errStr.append(GetUrl());
+				} else {
+					errStr.append(i_verb1);
+					
+					if (!i_verb2.empty()) {
+						errStr.append(", ");
+						errStr.append(i_verb2);
+					}
+				}
+
+				errStr.append(")");
+
 				PostAlert(errStr.utf8Z());
 				i_terminateErr.Set(ERR_Already_Reported);
 			}
@@ -722,44 +786,63 @@ bool			IsLocalHostURL(const SuperString& in_urlStr, bool *gotBP0, SuperString *o
 	return localB;
 }
 
+#ifndef DOT_JSON
+	#define DOT_JSON ".json"
+#endif
+
 SuperString		CNetHTTP::GetDate(const SuperString& urlStr, OSStatus *errP0)
 {
 	SuperString		dateStr;
-	bool			gotB;
-	SuperString		pathStr;
-	
-	if (IsLocalHostURL(urlStr, &gotB, &pathStr)) {
-		if (gotB) {
-			CFAbsoluteTime	modDate(0);
-			
-			#ifdef _KJAMS
-			{
-				CFileRef		fileRef(pathStr);
-				
-				ETX(FSrGetFileDates(fileRef.ref(), &modDate));
-			}
-			#endif
+	OSStatus		err(noErr);
 
-			dateStr.append((float)modDate);
+	XTE_START {
+		bool			gotB;
+		SuperString		pathStr;
+
+		if (IsLocalHostURL(urlStr, &gotB, &pathStr)) {
+			if (gotB) {
+				CFAbsoluteTime	absT(0);
+
+				#ifdef _KJAMS
+				{
+					CFileRef		fileRef(pathStr);
+
+					ETX(FSrGetFileDates(fileRef.ref(), &absT));
+				}
+				#endif
+
+				dateStr.Set(absT, SS_Time_SHORT);
+			}
+		} else if (urlStr.Contains(DOT_JSON)) {
+			CCFDictionary	dict(Download_String(urlStr), true);
+			CFAbsoluteTime	absT(dict.GetAs_AbsTime(kCFURLAccessHeaderKey_LastModified));
+
+			dateStr.Set(absT, SS_Time_SHORT);
+		} else {
+			CNetHTTP		net(kCFURLAccessMethod_HEAD);
+
+			ETX(net.SendMessage(urlStr.utf8().c_str()));
+			ETX(net.WaitForEnd());
+
+			if (net.i_incoming_headerDict.Get()) {
+				dateStr.Set(net.i_incoming_headerDict.GetAs_String(kCFURLAccessHeaderKey_LastModified));
+
+				if (dateStr.empty()) {
+					Log("$$$ Last-Modified is empty!  using date instead (which means current date stamp usually, ie: it's always out of date!)");
+					dateStr.Set(net.i_incoming_headerDict.GetAs_String(kCFURLAccessHeaderKey_Date));
+				}
+			}
+
+			//	round trip to convert to local time
+			dateStr.Set(dateStr.GetAs_CFAbsoluteTime());
 		}
-	} else {
-		CNetHTTP		net(kCFURLAccessMethod_HEAD);
-		OSStatus		err = noErr;
-		
-		ERR(net.SendMessage(urlStr.utf8().c_str()));
-		ERR(net.WaitForEnd());
-		
-		if (err) {
-			if (errP0) {
-				*errP0 = err;
-			}
-		} else if (net.i_incoming_headerDict.Get()) {
-			dateStr.Set(net.i_incoming_headerDict.GetAs_String(kCFURLAccessHeaderKey_LastModified));
+	} XTE_END;
 
-			if (dateStr.empty()) {
-				Log("$$$ Last-Modified is empty!  using date instead (which means current date stamp usually, ie: it's always out of date!)");
-				dateStr.Set(net.i_incoming_headerDict.GetAs_String(kCFURLAccessHeaderKey_Date));
-			}
+	if (err) {
+		if (errP0) {
+			*errP0 = err;
+		} else {
+			ETX(err);
 		}
 	}
 
@@ -891,48 +974,6 @@ SStringMap		CNetHTTP::CopyUrlEncodeStrAsMap(const SuperString& in_str)
 }
 
 /******************************************************/
-#ifdef _KJAMS_
-class MT_SendMessage : CMainThreadProc {
-	OSErr&			err;
-	CNetHTTP		*thiz;
-	const UTF8Char	*i_urlZ;
-	long			i_portL;
-	CCFDictionary	i_headerDict;
-	const UTF8Char	*i_bodyZ;
-	bool			i_escapeB;
-
-	public:
-	MT_SendMessage(
-		OSErr			*in_errP,
-		CNetHTTP		*in_thiz, 
-		const UTF8Char	*urlZ,
-		long			portL,
-		CCFDictionary	*headerDictP,
-		const UTF8Char	*bodyZ,
-		bool			escapeB
-	) : 
-		err(*in_errP), 
-		thiz(in_thiz), 
-		i_urlZ(urlZ), 
-		i_portL(portL), 
-		i_bodyZ(bodyZ),
-		i_escapeB(escapeB), CMainThreadProc("send URL message")
-	{
-		ScSendToStartupWind		sc;
-
-		if (headerDictP) {
-			i_headerDict.SetAndRetain(headerDictP->Get());
-		}
-		
-		call(CMT_Call_SYNC);
-	}
-
-	void	operator()() {
-		err = thiz->SendMessage(i_urlZ, i_portL, &i_headerDict, i_bodyZ, i_escapeB);
-	}
-};
-#endif	//	_KJAMS_
-
 OSErr 			CNetHTTP::SendMessage(CCFDictionary& dict)
 {
 	OSErr			err				= noErr;
@@ -1011,7 +1052,7 @@ OSErr 			CNetHTTP::SendMessage(CCFDictionary& dict)
 	}
 
 	return err;
-}	
+}
 
 OSErr 	CNetHTTP::SendMessage(
 	const UTF8Char	*urlZ, 
@@ -1028,13 +1069,26 @@ OSErr 	CNetHTTP::SendMessage(
 	
 	i_cur_accessMethodStr = GetAccessMethod();
 
-	if (IsPreemptiveThread()) {
-		#ifdef _KJAMS_
-			new MT_SendMessage(&err, this, urlZ, portL, headerDictP, bodyZ, escapeB);
-		#endif
-
+	#if defined(_KJAMS_)
+	if (!CNetHTTPClient::IsMyThread() && CNetHTTPClient::OnePerThread()) {
+		CCFDictionary		dict;
+		
+		dict.SetValue(kURL_this_CNetHTTP, (Ptr)this);
+		dict.SetValue(kURL_url, (const char *)urlZ);
+		dict.SetValue(kURL_port, portL);
+		
+		if (headerDictP) {
+			dict.SetValue(kURL_headers, headerDictP->ref());
+		}
+		
+		dict.SetValue(kURL_body, (const char *)bodyZ);
+		dict.SetValue(kURL_escape, escapeB);
+		
+		CNetHTTPClient(&err, &dict);
 		return err;
-	} else {
+	} else 
+	#endif
+	{
 		i_url.Set(urlZ);
 		
 		DeleteTask();
@@ -1111,15 +1165,18 @@ OSErr 	CNetHTTP::SendMessage(
 	//			readStreamRef, kCFStreamPropertyHTTPProxyPort, numRef); 
 		}
 
+		CFRunLoopRef	runLoopRef(GetMainRunLoop());
+
 		#ifdef _KJAMS_
 		{
 			CNet_Timer_StreamTimedOut	*timerP = new CNet_Timer_StreamTimedOut(
-				Pref_GetTimeout_Client(), this, readStreamRef);
+				Pref_GetTimeout_Client(), this, readStreamRef, runLoopRef);
 			
 			i_timeOutRef = timerP->GetForkRef();
 		}
 		#else
-			i_streamRef = readStreamRef;
+			s_streamRef		= readStreamRef;
+			s_runLoopRef	= runLoopRef;
 		#endif
 
 		// Set the client notifier
@@ -1135,7 +1192,7 @@ OSErr 	CNetHTTP::SendMessage(
 			// Schedule the stream
 			CFReadStreamScheduleWithRunLoop(
 				readStreamRef, 
-				GetMainRunLoop(), 
+				runLoopRef, 
 				kCFRunLoopCommonModes);
 
 			i_doneB.Set(false);
@@ -1205,7 +1262,10 @@ OSStatus		CNetHTTP::DownloadCompleted(OSStatus in_err)
 		if (dl_size_expectedL != dl_size_actualL) {
 			i_terminateEventType = kCFStreamEventErrorOccurred;
 			i_terminateErr.Set(err = notEnoughDataErr);
-			ReportErrors();
+
+			if (i_completed_err_reportB) {
+				ReportErrors();
+			}
 		}
 	}
 	
@@ -1330,6 +1390,16 @@ OSStatus	CNetHTTP::Download_String(const SuperString& urlStr, SuperString *resul
 	return Download_String(dict, resultStrP);
 }
 
+//	static
+SuperString		CNetHTTP::Download_String(const SuperString& urlStr, bool ignore_sizeB)
+{
+	SuperString		resultStr;
+	CNetHTTP		net(kCFURLAccessMethod_GET);
+
+	ETX(net.Download_String(urlStr, &resultStr, ignore_sizeB));
+	return resultStr;
+}
+
 
 OSStatus	CNetHTTP::Download_CFData(const SuperString& urlStr, CCFData *refP, bool ignore_sizeB)
 {
@@ -1409,13 +1479,15 @@ OSStatus		CNetHTTP::DownloadToFolder(CCFDictionary& dict)
 					if (i_verb2.empty()) {
 						i_verb2 = fileNameStr;
 					}
+
+					i_verb2.UnEscape();
 				}
 			
 				CAS_URL				*urlP(NewDownloadSpool(dict));
 				ScSpoolReleaser		sc1(urlP);
 				CAS_File			*fileP(new CAS_File(i_verb1, i_verb2));
 				ScSpoolReleaser		sc2(fileP);
-				CNet_Completion		*completionP((CNet_Completion *)dict.GetAs_Ptr(kURL_completion));
+				CNet_Completion		*completionP(dict.GetAs_PtrT<CNet_Completion *>(kURL_completion));
 				
 				fileP->SetParams(destFolder.ref());
 				completionP->SetParam(destFolder.ref());
@@ -1430,7 +1502,7 @@ OSStatus		CNetHTTP::DownloadToFolder(CCFDictionary& dict)
 	} XTE_END;
 	
 	if (err && complete_on_errB) {
-		CNet_Completion		*completionP((CNet_Completion *)dict.GetAs_Ptr(kURL_completion));
+		CNet_Completion		*completionP(dict.GetAs_PtrT<CNet_Completion *>(kURL_completion));
 		
 		if (completionP) {
 			completionP->SetErr(err);
@@ -1447,7 +1519,7 @@ OSStatus	CNetHTTP::CB_S_DownloadToFolder(
 	void *dataP, OSStatus err)
 {
 	CCFDictionary		dict((CFDictionaryRef)dataP);
-	CNetHTTP			*thiz((CNetHTTP *)dict.GetAs_Ptr(kURL_this_CNetHTTP));
+	CNetHTTP			*thiz(dict.GetAs_PtrT<CNetHTTP *>(kURL_this_CNetHTTP));
 
 	UNREFERENCED_PARAMETER(err);
 
@@ -1558,7 +1630,7 @@ void	CNet_Completion::operator()()
 #ifdef _KJAMS_	//	cuz it requires CFileRef
 class		CDownloadToFolder_Completion : public CNet_Completion {
 	typedef	CNet_Completion				_inherited;
-	std::auto_ptr<CDownloadToFolder>	i_thiz;
+	CFAutoPtr<CDownloadToFolder>	i_thiz;
 	public:	
 
 	CDownloadToFolder_Completion(CNetHTTP *netP, CDownloadToFolder *thiz) :
@@ -1637,6 +1709,44 @@ void	CDownloadToFolder::completion(OSStatus err, CNetHTTP *netP)
 		cFile.Reveal();
 	}
 	#endif
+}
+
+void			RemoteURL_GetEssence(
+	const SuperString&	urlStr, 
+	bool				escapeB, 
+	CSong				*songP,
+	UCharVec			*io_charVec)
+{
+	CCFDictionary		dict;
+	
+	CF_ASSERT(songP);
+
+	dict.SetValue(kURL_url, urlStr);
+	dict.SetValue(kURL_verb1, SSLocalize("Cacheing Audio stream:", "copying the data to local storage"));
+	dict.SetValue(kURL_verb2, songP->GetName());
+	dict.SetValue(kURL_escape, escapeB);
+	
+	CNetHTTP			*streamP = new CNetHTTP();
+	
+	BEX_TRY {
+		{
+			CCritical		sc(&songP->i_netP);
+			
+			ETX(songP->i_abortErr.Get());
+			songP->i_netP.Set(streamP);
+		}
+		
+		ETX(streamP->Download_UCharVec(dict, io_charVec));
+	} BEX_CLEANUP {
+	
+		{
+			CCritical		sc(&songP->i_netP);
+			
+			songP->i_netP.Set(NULL);
+		}
+
+		new CNetHTTP_Disposer(streamP);
+	} BEX_ENDTRY;
 }
 #endif
 
@@ -1762,3 +1872,4 @@ void				TestCSTDownload()
 	netP->MT_DownloadToFolder(dict);
 #endif //	_KJAMS_
 }
+

@@ -108,7 +108,7 @@ void		StockCheck(const SuperString& symbolStr)
 
 #endif // kStockChecker
 
-#if _QT_ || OPT_MACOS
+#if _QT_ || OPT_MACOS || 1
 int		main()
 #else
 int		WINAPI wWinMain(HINSTANCE h, HINSTANCE prev, LPWSTR cmd, int show)
@@ -119,8 +119,6 @@ int		WINAPI wWinMain(HINSTANCE h, HINSTANCE prev, LPWSTR cmd, int show)
 	#elif 1
 		CFTest();
 		//CFNetworkTest();
-
-		CFSleep(0.5);
 	#else
 		CFUserNotificationDisplayNotice(
 			0, kCFUserNotificationStopAlertLevel, NULL, NULL, NULL,

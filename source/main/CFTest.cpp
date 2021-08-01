@@ -5,28 +5,33 @@
 #include <CoreFoundation/CFDateFormatter.h>
 #include <CoreFoundation/CFCalendar.h>
 #include <CoreFoundation/CFBundle.h>
+#include "MinMax.h"
 #include "CCFData.h"
 #include "CFTest.h"
 
-#define			kTest_ExtraLogging					0
+#define			kTest_ExtraLogging					1
 
 //---------------------------------------------------------------------------------------------------------
 //	test all of these, all must succeed
-#if 0
+#if 1
+	#define		kTest_BitDepthAndPtrSize			0
 	#define		kTest_CFTicks						0
 	#define		kTest_StringCompare					0
 	#define		kTest_EncodingConversion			0
 	#define		kTest_Locale						0
 	#define		kTest_LocToEncoding					0
-	#define		kTest_DateTime						1
+	#define		kTest_DateTime						0
+	#define		kTest_TimeZone						1
 	#define		kTest_Bundle						0
 #else
-	#define		kTest_CFTicks						0
+	#define		kTest_BitDepthAndPtrSize			1
+	#define		kTest_CFTicks						1
 	#define		kTest_StringCompare					1
 	#define		kTest_EncodingConversion			1
 	#define		kTest_Locale						1
 	#define		kTest_LocToEncoding					1
 	#define		kTest_DateTime						1
+	#define		kTest_TimeZone						1
 	#define		kTest_Bundle						1
 #endif
 
@@ -166,6 +171,11 @@ class CParseXML {
 	}
 };
 
+CFAbsoluteTime		CFRoundToThousands(const CFAbsoluteTime& absT)
+{
+	return CFMillisecondsToSeconds(CFSecondsToMilliseconds(absT));
+}
+
 #ifdef __MWERKS__
 static CFGregorianDate			CFGetGregorianDate(CFAbsoluteTime at, CFTimeZoneRef tz)
 {
@@ -186,6 +196,112 @@ void	ReportBitDepth(const char *projZ, size_t detectedL, size_t properL)
 	CFReportUnitTest(str.utf8Z(), detectedL != properL);
 }
 
+/*
+static void	DisplayClock()
+{
+	do {
+		{
+			CFTimeZoneResetSystem();
+
+			CCFTimeZone			timeZoneRef(CFTimeZoneCopyDefault());
+			CFAbsoluteTime		absTime(CFAbsoluteTimeGetCurrent());
+			CCFDate				dateRef(CFDateCreate(kCFAllocatorDefault, absTime));
+
+			CCFLog(true)(CFSTR("-------------------------------------------------------------------------------"));
+			CCFLog(true)(dateRef.Get());
+			CCFLog(true)(timeZoneRef.Get());
+
+			CFAbsoluteTime		absT(CFDateGetAbsoluteTime(dateRef));
+			SuperString			formatStr;
+			
+			formatStr.ssprintf("Time: %.2lf\n", absT);
+			CCFLog(true)(formatStr.ref());
+		}
+
+		#if OPT_MACOS
+			CFSleep(kEventDurationSecond);
+		#else
+			Sleep(CFSecondsToMilliseconds(kEventDurationSecond));
+		#endif
+	} while (1);
+}
+*/
+
+
+class Array_Each_CFTimeZone {
+
+	void	TZReportUnitTest(SuperString tzStr, const char *testZ, OSStatus err)
+	{
+		tzStr.Enquote(true);
+		tzStr.prepend("CFTimeZone: ");
+		tzStr.append(": ");
+		tzStr.append(uc(testZ));
+		CFReportUnitTest(tzStr.utf8Z(), err);
+	}
+
+	public:
+
+	void operator()(CFTypeRef valRef) {
+		CCFDictionary		test_dict(				(CFDictionaryRef)valRef, true);
+		SuperString			test_tzDisplayNameStr(	test_dict.GetAs_SString(kCFTimeZoneDictKey_DisplayName));
+		SuperString			test_tzNameStr(			test_dict.GetAs_SString(kCFTimeZoneDictKey_Name));
+		CFTimeInterval		test_tzOffsetF(			test_dict.GetAs_Double(kCFTimeZoneDictKey_ZoneOffset));
+		CFTimeInterval		test_dstOffsetF(		test_dict.GetAs_Double(kCFTimeZoneDictKey_DstOffset));
+		SuperString			test_tzAbbrevStr(		test_dict.GetAs_SString(kCFTimeZoneDictKey_Abbreviation));
+		SuperString			test_tzAbbrevDstStr(	test_dict.GetAs_SString(kCFTimeZoneDictKey_Abbreviation_Dst));
+		SuperString			test_tzLocNameStr(		test_dict.GetAs_SString(kCFTimeZoneDictKey_LocalizedName));
+		SuperString			test_tzLocNameDstStr(	test_dict.GetAs_SString(kCFTimeZoneDictKey_LocalizedName_Dst));
+
+		#if OPT_WINOS
+		{
+			SuperString			msgStr("Set your computer's time zone to:\n");
+
+			msgStr += test_tzDisplayNameStr.Enquote(true);
+			CFWaitForKeyPress(msgStr.ref());
+			CFTimeZoneResetSystem();
+		}
+		#else
+		{
+			CCFTimeZone		newTz(CFTimeZoneCreateWithName(kCFAllocatorDefault, test_tzNameStr.ref(), true));
+
+			CFTimeZoneSetDefault(newTz);
+		}
+		#endif
+
+		CCFTimeZone			curTz(			CFTimeZoneCopyDefault());
+		CCFDictionary		dict(			CFTimeZoneCopyDict(curTz));
+		SuperString			tzNameStr(		dict.GetAs_SString(kCFTimeZoneDictKey_Name));
+		CFTimeInterval		tzOffsetF(		dict.GetAs_Double(kCFTimeZoneDictKey_ZoneOffset));
+		CFTimeInterval		dstOffsetF(		dict.GetAs_Double(kCFTimeZoneDictKey_DstOffset));
+		SuperString			tzAbbrevStr(	dict.GetAs_SString(kCFTimeZoneDictKey_Abbreviation));
+		SuperString			tzLocStr(		dict.GetAs_SString(kCFTimeZoneDictKey_LocalizedName));
+		bool				is_dstB(		dict.GetAs_Bool(kCFTimeZoneDictKey_IsDst));
+		SuperString			test_abbrevStr(	is_dstB ? test_tzAbbrevDstStr : test_tzAbbrevStr);
+		SuperString			test_locStr(	is_dstB ? test_tzLocNameDstStr : test_tzLocNameStr);
+
+		if (is_dstB) {
+			test_tzOffsetF += test_dstOffsetF;
+		} else {
+			test_dstOffsetF = 0;
+		}
+
+		if (ExtraLogging()) {
+			CCFLog(true)(CFSTR("-------------------------------------------"));
+			CCFLog(true)(dict);
+		}
+
+		TZReportUnitTest(test_tzNameStr, kCFTimeZoneDictKey_Name,			tzNameStr	!= test_tzNameStr);
+		TZReportUnitTest(test_tzNameStr, kCFTimeZoneDictKey_LocalizedName,	tzLocStr	!= test_locStr);
+		TZReportUnitTest(test_tzNameStr, kCFTimeZoneDictKey_DstOffset,		dstOffsetF	!= test_dstOffsetF);
+		TZReportUnitTest(test_tzNameStr, kCFTimeZoneDictKey_ZoneOffset,		tzOffsetF	!= test_tzOffsetF);
+		TZReportUnitTest(test_tzNameStr, kCFTimeZoneDictKey_Abbreviation,	tzAbbrevStr	!= test_abbrevStr);
+
+		//	always put things back where they belong
+		CFTimeZoneResetSystem();
+	}
+};
+
+
 void	CFTest()
 {
 	SuperString		resultStr;
@@ -196,47 +312,57 @@ void	CFTest()
 	
 	CCFLog()(CFSTR("\n--------------------New CFTest Log----------------\n"));
 
-	if (ExtraLogging()) {
-		SuperString			str("Size of CFIndex: %d");
-		
-		str.ssprintf(NULL, (int)sizeof(CFIndex));
-		CCFLog(true)(str.ref());
-	}
-
+	#if 0
 	{
-		#if __LP64__
-			size_t		proper_sizeL = 8;
-		#else
-			size_t		proper_sizeL = 4;
-		#endif
+		double		cf_versF(kCFCoreFoundationVersionNumber);
 
-		#if OPT_WINOS
-			ReportBitDepth("CFLite", CFIndexGetSize(), proper_sizeL);
-		#endif
-		
-		ReportBitDepth("CFTest", sizeof(CFIndex), proper_sizeL);
+		Logf("CF Version: %lf\n", cf_versF);
 	}
+	#endif
 
-	{
-		CCFDictionary		dict;
-		Ptr					dictP((Ptr)&dict);
-		
-		dict.SetValue("ptr", dictP);
-		
-		Ptr					out_dictP(dict.GetAs_Ptr("ptr"));
-		
-		CFReportUnitTest("Dictionary Ptr", dictP != out_dictP);
-	}
+	if (kTest_BitDepthAndPtrSize) {
+		if (ExtraLogging()) {
+			SuperString			str("Size of CFIndex: %d");
 
-	{
-		SuperString			str;
-		Ptr					strP((Ptr)&str);
-		
-		str.Set_Ptr(strP);
-		
-		Ptr					out_strP(str.GetAs_Ptr());
-		
-		CFReportUnitTest("String Ptr", strP != out_strP);
+			str.ssprintf(NULL, (int)sizeof(CFIndex));
+			CCFLog(true)(str.ref());
+		}
+
+		{
+			#if __LP64__
+				size_t		proper_sizeL = 8;
+			#else
+				size_t		proper_sizeL = 4;
+			#endif
+
+			#if OPT_WINOS
+				ReportBitDepth("CFLite", CFIndexGetSize(), proper_sizeL);
+			#endif
+			
+			ReportBitDepth("CFTest", sizeof(CFIndex), proper_sizeL);
+		}
+
+		{
+			CCFDictionary		dict;
+			Ptr					dictP((Ptr)&dict);
+			
+			dict.SetValue("ptr", dictP);
+			
+			Ptr					out_dictP(dict.GetAs_Ptr("ptr"));
+			
+			CFReportUnitTest("Dictionary Ptr", dictP != out_dictP);
+		}
+
+		{
+			SuperString			str;
+			Ptr					strP((Ptr)&str);
+			
+			str.Set_Ptr(strP);
+			
+			Ptr					out_strP(str.GetAs_Ptr());
+			
+			CFReportUnitTest("String Ptr", strP != out_strP);
+		}
 	}
 
 	if (kTest_CFTicks) {
@@ -485,7 +611,29 @@ void	CFTest()
 		if (ExtraLogging()) {
 			CCFLog()(CFSTR("------------------Locale---------------\n"));
 		}
-		
+
+		//	no unit tests
+		if (ExtraLogging()) {
+			CCFLog()(CFSTR("------------------Numbers---------------\n"));
+			ScCFReleaser<CFNumberFormatterRef>		numFormatRef;
+			ScCFReleaser<CFStringRef>				numStr;
+			float									numF = 123456.789f;
+			ScCFReleaser<CFNumberRef>				numberRef(CFNumberCreate(
+				kCFAllocatorDefault, kCFNumberFloat32Type, &numF));
+
+			numFormatRef.adopt(CFNumberFormatterCreate(
+				kCFAllocatorDefault, localeRef, kCFNumberFormatterDecimalStyle));
+			numStr.adopt(CFNumberFormatterCreateStringWithNumber(
+				kCFAllocatorDefault, numFormatRef, numberRef));
+			CCFLog(true)(numStr.Get());
+
+			numFormatRef.adopt(CFNumberFormatterCreate(
+				kCFAllocatorDefault, localeRef, kCFNumberFormatterCurrencyStyle));
+			numStr.adopt(CFNumberFormatterCreateStringWithNumber(
+				kCFAllocatorDefault, numFormatRef, numberRef));
+			CCFLog(true)(numStr.Get());
+		}
+
 		SStringMap				langVec;
 		
 		langVec["English"]		= "en";
@@ -568,13 +716,12 @@ void	CFTest()
 		CFReportUnitTest("Preferred Language Match", prefLang != prefLang2);
 	}
 	
-	//	no unit tests
 	if (kTest_DateTime) {
 		
 		if (ExtraLogging()) {
 			CCFLog()(CFSTR("------------------Calendar---------------\n"));
 		}
-		
+				
 		ScCFReleaser<CFCalendarRef>		calendarRef(CFCalendarCopyCurrent());
 		SuperString						calIDStr(CFCalendarGetIdentifier(calendarRef));
 		
@@ -591,7 +738,31 @@ void	CFTest()
 		SuperString			dateStr0;
 
 		dateStr0.Set(absTime, SS_Time_LONG_PRETTY);
+		
+		{
+			SuperString				isoDateStr;
 
+			absTime = CFRoundToThousands(absTime);
+			isoDateStr.Set(absTime, SS_Time_JSON);
+
+			CFReportUnitTest("Conforms to JSON Date", isoDateStr.GetTimeType() != SS_Time_JSON);
+
+			CFAbsoluteTime			isoDateT(CFRoundToThousands(
+				isoDateStr.GetAs_CFAbsoluteTime(SS_Time_JSON)));
+
+			CFReportUnitTest("Round Trip JSON Date (String)", absTime != isoDateT);
+			
+			CCFDictionary			dict; dict.SetValue_AbsTime("time", absTime);
+			SuperString				jsonStr(dict.GetJSON(kJSON_Compact, kJSON_DateFormat_JSON));
+			
+			dict.clear();
+			dict.SetJSON(jsonStr);
+			
+			isoDateT = CFRoundToThousands(dict.GetAs_AbsTime("time"));
+
+			CFReportUnitTest("Round Trip JSON Date (Dictionary)", absTime != isoDateT);
+		}
+		
 		CCFTimeZone						timeZoneRef(CFCalendarCopyTimeZone(calendarRef));
 		CCFTimeZone						timeZoneRef2(CFTimeZoneCopyDefault());
 		CFTimeInterval					ti_1(CFTimeZoneGetSecondsFromGMT(timeZoneRef, absTime));
@@ -603,6 +774,9 @@ void	CFTest()
 		CCFString						tzNameRef(CFTimeZoneGetName(timeZoneRef));
 		
 		if (ExtraLogging()) {
+			SuperString			timeStr(CFStringCreateWithDate(dateRef, kCFDateFormatterNoStyle), false);
+
+			CCFLog(true)(timeStr.ref());
 			CCFLog(true)(dateRef.Get());
 			CCFLog(true)(timeZoneRef.Get());
 			CCFLog(true)(tzNameRef.Get());
@@ -761,26 +935,264 @@ void	CFTest()
 		#endif
 	}
 	
-	//	no unit tests
-	if (ExtraLogging()) {
-		CCFLog()(CFSTR("------------------Numbers---------------\n"));
-		ScCFReleaser<CFNumberFormatterRef>		numFormatRef;
-		ScCFReleaser<CFStringRef>				numStr;
-		float									numF = 123456.789f;
-		ScCFReleaser<CFNumberRef>				numberRef(CFNumberCreate(
-			kCFAllocatorDefault, kCFNumberFloat32Type, &numF));
-		
-		numFormatRef.adopt(CFNumberFormatterCreate(
-			kCFAllocatorDefault, localeRef, kCFNumberFormatterDecimalStyle));
-		numStr.adopt(CFNumberFormatterCreateStringWithNumber(
-			kCFAllocatorDefault, numFormatRef, numberRef));
-		CCFLog(true)(numStr.Get());
-		
-		numFormatRef.adopt(CFNumberFormatterCreate(
-			kCFAllocatorDefault, localeRef, kCFNumberFormatterCurrencyStyle));
-		numStr.adopt(CFNumberFormatterCreateStringWithNumber(
-			kCFAllocatorDefault, numFormatRef, numberRef));
-		CCFLog(true)(numStr.Get());
+	if (kTest_TimeZone) {
+		//	display all known timezones
+		#if 0
+		{
+			CCFArray			namesArray(CFTimeZoneCopyKnownNames());
+
+			CCFLog(true)(namesArray);
+			CCFLog(true)(CFSTR("------------------------"));
+		}
+		#endif
+
+		//	display TZ abbreviation dictionary
+		#if 0
+		{
+			CCFDictionary		abbrevDict(CFTimeZoneCopyAbbreviationDictionary());
+
+			CCFLog(true)(abbrevDict.ref());
+			CCFLog(true)(CFSTR("------------------------"));
+		}
+		#endif
+
+		#if 1
+		{
+			CCFArray	tz_unit_test_array;
+
+			//	to create a test dict:
+			//	set kCFTimeZoneDictKey_Abbreviation to STANDARD time abbrev
+			//	set kCFTimeZoneDictKey_Abbreviation_Dst to DAYLIGHT time abbrev (both the same if no DST)
+			//	set kCFTimeZoneDictKey_ZoneOffset to STANDARD time offset
+			//	set kCFTimeZoneDictKey_DstOffset to DAYLIGHT offset
+
+			#if 1
+			{
+				CCFDictionary		tz_dict;
+
+
+				#if OPT_MACOS
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"America/Los_Angeles");
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Los Angeles, CA - United States");
+				#else
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"Pacific Standard Time");
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Pacific Time (US & Canada)");
+				#endif
+
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation,		"PST");
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation_Dst,	"PDT");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName,		"GMT-08:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName_Dst,	"GMT-07:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_ZoneOffset,			(double)-8.0);
+				tz_dict.SetValue(kCFTimeZoneDictKey_DstOffset,			(double)1.0);
+				tz_unit_test_array.push_back(tz_dict);
+			}
+			#endif
+
+			#if 1
+			{
+				CCFDictionary		tz_dict;
+
+				#if OPT_MACOS
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"America/Denver");
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Colorado Springs, CO - United States");
+				#else
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"Mountain Standard Time");
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Mountain Time (US & Canada)");
+				#endif
+
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation,		"MST");
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation_Dst,	"MDT");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName,		"GMT-07:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName_Dst,	"GMT-06:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_ZoneOffset,			(double)-7.0);
+				tz_dict.SetValue(kCFTimeZoneDictKey_DstOffset,			(double)1.0);
+				tz_unit_test_array.push_back(tz_dict);
+			}
+			#endif
+
+			#if 1
+			{
+				CCFDictionary		tz_dict;
+
+				//	"abbrev" fails on windows
+
+				#if OPT_MACOS
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Phoenix, AZ - United States");
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"America/Phoenix");
+				#else
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Arizona");
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"GMT-0700");	//	value returned by CF476, may need update if newer CF
+				#endif
+
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation,		"MST");
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation_Dst,	"MST");	//	no DST in arizona
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName,		"GMT-07:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName_Dst,	"GMT-07:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_ZoneOffset,			(double)-7.0);
+				tz_dict.SetValue(kCFTimeZoneDictKey_DstOffset,			(double)0.0);
+				tz_unit_test_array.push_back(tz_dict);
+			}
+			#endif
+
+			#if 1
+			{
+				CCFDictionary		tz_dict;
+
+				/*
+					//	reported by macOS Mojave
+					"name": "Europe/Berlin",
+					----------------------------
+					"is_dst": false,
+					"dst_offset": 0.00,
+					"zone_offset": 1.00,
+					"abbrev": "GMT+1"
+					----------------------------
+					"is_dst": true,
+					"dst_offset": 1.00,
+					"zone_offset": 2.00,
+					"abbrev": "GMT+2"
+
+					//	reported by Windows w/ CF 476
+					"name": "W. Europe Standard Time",
+					----------------------------
+					"is_dst": false,
+					"dst_offset": 1.00,	//	WRONG
+					"zone_offset": 1.00,
+					"abbrev": ""		//	WRONG
+					----------------------------
+					"is_dst": true,
+					"dst_offset": 1.00,
+					"zone_offset": 2.00,
+					"abbrev": ""		//	WRONG
+				*/
+
+				#if OPT_MACOS
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Berlin - Germany");
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"Europe/Berlin");
+				#else
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Amsterdam, Berlin, Bern, etc...");
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"W. Europe Standard Time");
+				#endif
+
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation,		"GMT+1");
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation_Dst,	"GMT+2");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName,		"GMT+01:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName_Dst,	"GMT+02:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_ZoneOffset,			(double)1.0);
+				tz_dict.SetValue(kCFTimeZoneDictKey_DstOffset,			(double)1.0);
+				tz_unit_test_array.push_back(tz_dict);
+			}
+			#endif
+
+
+			#if 1
+			{
+				CCFDictionary		tz_dict;
+
+				/*
+					//	reported by macOS Mojave
+					"name": "Europe/Berlin",
+					----------------------------
+					"is_dst": false,
+					"dst_offset": 0.00,
+					"zone_offset": 1.00,
+					"abbrev": "GMT+1"
+					"localized_name": "GMT+01:00",
+					----------------------------
+					"is_dst": true,
+					"dst_offset": 1.00,
+					"zone_offset": 2.00,
+					"abbrev": "GMT+2"
+					"localized_name": "GMT+02:00",
+
+					//	reported by Windows w/ CF 476
+					"name": "Central Europe Standard Time"
+					----------------------------
+					"zone_offset": 1.00,
+					"is_dst": false,
+					"abbrev": "",					//	wrong
+					"dst_offset": 1.00				//	wrong
+					"localized_name": "GMT+00:00",	//	wrong
+					----------------------------
+					"zone_offset": 2.00,
+					"is_dst": true,
+					"abbrev": "",					//	wrong
+					"dst_offset": 1.00
+					"localized_name": "GMT+00:00",	//	wrong
+				*/
+
+				#if OPT_MACOS
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Belgrade - Serbia");
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"Europe/Belgrade");
+				#else
+					tz_dict.SetValue(kCFTimeZoneDictKey_DisplayName,		"Belgrade, Bratislava, Budapest, etc...");
+					tz_dict.SetValue(kCFTimeZoneDictKey_Name,				"Central Europe Standard Time");
+				#endif
+
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation,		"GMT+1");
+				tz_dict.SetValue(kCFTimeZoneDictKey_Abbreviation_Dst,	"GMT+2");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName,		"GMT+01:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_LocalizedName_Dst,	"GMT+02:00");
+				tz_dict.SetValue(kCFTimeZoneDictKey_ZoneOffset,			(double)1.0);
+				tz_dict.SetValue(kCFTimeZoneDictKey_DstOffset,			(double)1.0);
+				tz_unit_test_array.push_back(tz_dict);
+			}
+			#endif
+
+			tz_unit_test_array.for_each(Array_Each_CFTimeZone());
+		}
+		#endif
+
+		//	display info for a particular TZ
+		#if 0
+		{
+			SuperString			tzStr("Europe/Berlin");
+			CCFTimeZone			curTz(CFTimeZoneCreateWithName(
+				kCFAllocatorDefault, tzStr.ref(), false));
+
+			if (curTz.ref()) {
+				CCFDictionary		dict(CFTimeZoneCopyDict(curTz));
+
+				CCFLog(true)(curTz);
+				CCFLog(true)(dict);
+			} else {
+				tzStr.Enquote(true);
+				tzStr.append(" doesn't exist");
+				CCFLog(true)(tzStr.ref());
+			}
+		}
+		#endif
+
+		//	display 24 timezones using "GMT Offset" method
+		#if 0
+		{
+			CFAbsoluteTime			absT(CFAbsoluteTimeGetCurrent());
+			CCFTimeZone				curTz(CFTimeZoneCopyDefault());
+			CFTimeInterval			intervalTz(CFTimeZoneGetSecondsFromGMT(curTz.ref(), absT));
+			SuperString				dateStr;
+
+			//	show time in 24 timezones (unnamed, no daylight savings)
+			loop (24) {
+				CCFTimeZone			timeZone(
+					CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, intervalTz));
+
+				dateStr.Set(absT, SS_Time_SHORT, 0, timeZone.ref());
+				
+				SuperString		zoneNameStr(CFTimeZoneGetName(timeZone.ref()));
+				
+				dateStr += " (" + zoneNameStr + ")";
+				
+				CCFLog(true)(dateStr.ref());
+				
+				
+				intervalTz += kEventDurationHour;
+				if (intervalTz > (kEventDurationDay / 2)) {
+					intervalTz -= kEventDurationDay;
+				}
+			}
+		}
+		#endif
 	}
 
 	if (kTest_Bundle) {
@@ -867,7 +1279,7 @@ void	CFTest()
 
 						{
 #if OPT_WINOS
-							Logf("Exception report here is OK and expected. Please ignore this:");
+							//Log("Exception report here is OK and expected. Please ignore this:");
 #endif
 							goodB = !dictRef.ContainsKey("Playlists\\25\\Columns\\SORTDIR");
 							CFReportUnitTest("CFDict key as path: invalid array index", !goodB);
@@ -926,6 +1338,8 @@ void	CFTest()
 			}
 		}
 	}
-		
+	
+	// DisplayClock();
+
 	CCFLog()(CFSTR("------------------CFTest Tests Ended--------------\n"));
 }

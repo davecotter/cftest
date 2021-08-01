@@ -31,6 +31,12 @@
 CFStreamError		kCFStreamErrorNone = { kCFStreamErrorDomainMacOSStatus, noErr };
 
 /************************************************************************************************/
+static CFRunLoopRef		GetMainRunLoop()
+{
+	//CF_ASSERT(!IsMainThread());
+
+	return CFRunLoopGetCurrent();
+}
 
 class CFBonjourTask {
 	private:
@@ -243,6 +249,8 @@ class CFBonjourTask {
 						CCFDictionary		bonjourDict(GetRegistrationDict());
 						
 						CCFLog(true)(bonjourDict);
+
+						hostStr = bonjourDict.GetAs_String("domain");
 					}
 				} else {
 					SuperString			typeStr;
@@ -273,8 +281,13 @@ class CFBonjourTask {
                     SuperString     formatStr("Bonjour Success: %s: \"%s\" to \"%s\" (%s) on port <%s>\n");
                     
                     formatStr.Smarten();
+
 					Logf(formatStr.utf8Z(),
-						 actionZ, nameStr.utf8Z(), hostStr.utf8Z(), addressStr.utf8Z(), portStr.utf8Z());
+						 actionZ,
+						 nameStr.utf8Z(),
+						 hostStr.utf8Z(),
+						 addressStr.utf8Z(),
+						 portStr.utf8Z());
 				}
 				break;
 			}
@@ -307,7 +320,7 @@ class CFBonjourTask {
 					
 					#ifdef _CFTEST_
 					if (doneB) {
-			//			CFRunLoopStop(CFRunLoopGetCurrent());
+			//			CFRunLoopStop(GetMainRunLoop());
 					}
 					#endif
 				} else {
@@ -384,7 +397,7 @@ class CFBonjourTask {
 				}
 
 				if (i_clientSetB) {
-					CFNetServiceScheduleWithRunLoop(i_net.serviceRef, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+					CFNetServiceScheduleWithRunLoop(i_net.serviceRef, GetMainRunLoop(), kCFRunLoopCommonModes);
 					i_scheduledB = true;
 				}
 				
@@ -398,7 +411,7 @@ class CFBonjourTask {
 					i_streamErr.domain = (CFStreamErrorDomain)kCFStreamErrorDomainNetServices;
 					i_streamErr.error = kCFNetServicesErrorUnknown;
 				} else {
-			        CFNetServiceBrowserScheduleWithRunLoop(i_net.browserRef, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+					CFNetServiceBrowserScheduleWithRunLoop(i_net.browserRef, GetMainRunLoop(), kCFRunLoopCommonModes);
 					i_scheduledB = true;
 				}
 				break;
@@ -506,7 +519,7 @@ class CFBonjourTask {
 
 					case CFBonjour::kServiceType_REGISTER:
 					case CFBonjour::kServiceType_RESOLVE: {
-						CFNetServiceUnscheduleFromRunLoop(i_net.serviceRef, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+						CFNetServiceUnscheduleFromRunLoop(i_net.serviceRef, GetMainRunLoop(), kCFRunLoopCommonModes);
 
 						if (i_clientSetB) {
 							i_clientSetB = false;
@@ -518,7 +531,7 @@ class CFBonjourTask {
 
 					case CFBonjour::kServiceType_BROWSE: {
 						CF_ASSERT(i_clientSetB == false);
-						CFNetServiceBrowserUnscheduleFromRunLoop(i_net.browserRef, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+						CFNetServiceBrowserUnscheduleFromRunLoop(i_net.browserRef, GetMainRunLoop(), kCFRunLoopCommonModes);
 						break;
 					}
 				}

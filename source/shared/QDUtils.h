@@ -64,18 +64,53 @@
 	typedef struct ControlButtonContentInfo ControlButtonContentInfo;
 	#endif // __CONTROLS__
 
+	#if 1 // ndef __FONTS__
+		enum {
+		  kFontIDNewYork                = 2,
+		  kFontIDGeneva                 = 3,
+		  kFontIDMonaco                 = 4,
+		  kFontIDVenice                 = 5,
+		  kFontIDLondon                 = 6,
+		  kFontIDAthens                 = 7,
+		  kFontIDSanFrancisco           = 8,
+		  kFontIDToronto                = 9,
+		  kFontIDCairo                  = 11,
+		  kFontIDLosAngeles             = 12,
+		  kFontIDTimes                  = 20,
+		  kFontIDHelvetica              = 21,
+		  kFontIDCourier                = 22,
+		  kFontIDSymbol                 = 23,
+		  kFontIDMobile                 = 24
+		};
+	#endif // __FONTS__
+
 #endif	//	_QT_
+
+#define	kFontName_HELVETICA		"Helvetica"
+#define	kFontName_COURIER		"Courier"		//	typewriterish
+
+#if OPT_MACOS
+	#define	kFontName_MONACO		"Monaco"		//	clean like proFont
+#else
+	#define	kFontName_MONACO		"Consolas"		//	clean like proFont
+#endif
 
 #if !defined(_JUST_CFTEST_)
 
 	void		QD_SetRect(Rect *r, short left, short top, short right, short bottom);
+
+	Rect		QD_GetRect(short left, short top, short right, short bottom);
+	Rect		QD_GetRect(const Point& topLeft, const Point& botRight);
+	Rect		QD_GetRectFromSize(const Point& widHeight);
+
 	void		QD_OffsetRect(Rect *r, short x, short y);
 	void		QD_InsetRect(Rect *r, short x, short y);
 	Boolean		QD_EmptyRect(const Rect *r);
 	bool		QD_EqualRect(const Rect *a, const Rect *b);
 	bool		QD_EqualRectSize(const Rect& a, const Rect& b);
 
-	void		QD_SetRectPos(Rect& ioR, Point posPt);
+	void		QD_SetRectPos(Rect& ioR, const Point& posPt);
+	void		QD_SetRectPos(Rect& ioR, SInt32 hPos, SInt32 vPos);
 	Point		QD_RectPos(const Rect& ioR);
 
 	void		QD_SetRectWidth(Rect& ioR, short widthS);

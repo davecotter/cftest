@@ -280,6 +280,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				PREBINDING = NO;
 				PRODUCT_NAME = "CFTest Debug";
+				SDKROOT = macosx10.13;
 			};
 			name = Debug;
 		};
@@ -320,6 +321,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				PREBINDING = NO;
 				PRODUCT_NAME = CFTest;
+				SDKROOT = macosx10.13;
 			};
 			name = Release;
 		};

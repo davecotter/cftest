@@ -16,10 +16,12 @@ OSStatus	CCFData::Download_Resource(
 	OSStatus		err = noErr;
 	
 	#if defined(_KJAMS_)
-	std::auto_ptr<CTask>		sc;
+	CFAutoPtr<CTask>		sc;
 	
 	if (CTaskMgr::Get() && !gApp->IsStartup()) {
-		sc.reset(new CTask(urlRef, 0));
+		if (!SuperString(urlRef).Contains("kJams/Producer")) {
+			sc.reset(new CTask(urlRef, 0));
+		}
 	}
 	#endif
 	

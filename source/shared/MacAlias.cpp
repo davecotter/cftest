@@ -5,6 +5,8 @@
 #include "SuperString.h"
 #endif
 
+#include "CFUtils.h"
+
 #include <stdint.h>
 #include <cassert>
 #include <string>
@@ -129,7 +131,14 @@ static
 void		LogRecMap(const AliasTypeToStrMap& strMap)
 {
 	#ifdef kDEBUG
-		BOOST_FOREACH(const AliasTypeToStrMap::value_type& pair, strMap) {
+		//	no boost_foreach cuz PaddleServer
+		for (
+			AliasTypeToStrMap::const_iterator it = strMap.begin();
+			it != strMap.end();
+			++it
+		) {
+			const AliasTypeToStrMap::value_type&	pair = *it;
+			
 			char			bufAC[256];
 			std::string		typeStr(AliasRecTypeToStr(pair.first));
 			
@@ -377,19 +386,29 @@ void	ExtractV2String(const char **offsetPP, AliasRecV2Type *typeP, std::string *
 		int16_t			strLen	= EndianSwap_BigToHost_16Copy(*(int16_t *)*offsetPP);
 		int16_t			strLen2	= (byteLen >> 1) - 1;
 
-		MA_ASSERT(MA_IntegerIsEven(byteLen));
+		if (*typeP == kAliasRecV2_unk_09) {
+			//	no idea what kAliasRecV2_unk_09 is
+			//	but caught one with an odd bytelength
+			//	and it was definitely no utf16 string
 
-		if (byteLen <= 2) {
-			strLen = 0;
-		}
+			if (!MA_IntegerIsEven(byteLen)) {
+				++byteLen;
+			}
+		} else {
+			MA_ASSERT(MA_IntegerIsEven(byteLen));
 
-		if (strLen) {
-			MA_ASSERT(strLen == strLen2);
+			if (byteLen <= 2) {
+				strLen = 0;
+			}
 
-			MA_UTF16Char	*uni16P((MA_UTF16Char *)(*offsetPP + 2));
-			MA_UTF16Vec		uniStr(uni16P, uni16P + strLen);
+			if (strLen) {
+				MA_ASSERT(strLen == strLen2);
 
-			*strP = MA_ConvertUTF16_BE_to8(uniStr);
+				MA_UTF16Char	*uni16P((MA_UTF16Char *)(*offsetPP + 2));
+				MA_UTF16Vec		uniStr(uni16P, uni16P + strLen);
+
+				*strP = MA_ConvertUTF16_BE_to8(uniStr);
+			}
 		}
 	}
 
@@ -463,7 +482,9 @@ std::string			MacAlias_Resolve(const char* charP, size_t sizeL)
 					} while (strType != kAliasRecV2_END);
 				}
 
-				//LogRecMap(strMap);
+				if (0) {
+					LogRecMap(strMap);
+				}
 
 				fullPath += GetMapStringIf(strMap, kAliasRecV2_PosixRoot);
 				fullPath += GetMapStringIf(strMap, kAliasRecV2_PosixPath);

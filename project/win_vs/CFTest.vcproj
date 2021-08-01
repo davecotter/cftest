@@ -12,9 +12,6 @@
 		<Platform
 			Name="Win32"
 		/>
-		<Platform
-			Name="x64"
-		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -47,7 +44,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/MP"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\source&quot;;&quot;$(SolutionDir)..\..\source\headers&quot;;&quot;$(SolutionDir)..\..\source\main&quot;;&quot;$(SolutionDir)..\..\source\shared&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include\CFNetwork&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\source&quot;;&quot;$(SolutionDir)..\..\source\headers&quot;;&quot;$(SolutionDir)..\..\source\main&quot;;&quot;$(SolutionDir)..\..\source\shared&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include\CFNetwork&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include\std&quot;"
 				PreprocessorDefinitions="__WIN32__;_WIN32;WIN32;_DEBUG;_WINDOWS;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CFTEST_;_MIN_CF_;_JUST_CFTEST_"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -78,7 +75,7 @@
 				IgnoreDefaultLibraryNames="LIBCMT;CFLite"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)\pdbs\$(ProjectName).pdb"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="1"
 				TargetMachine="1"
 			/>
@@ -104,93 +101,6 @@
 				Name="VCPostBuildEventTool"
 				Description="Creating Bundle..."
 				CommandLine="python ../post_build_cftest.py VS 32 CFLite $(ConfigurationName) libressl"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				Description="Building Package..."
-				CommandLine="pre_build.bat $(ConfigurationName)"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\source&quot;;&quot;$(SolutionDir)..\..\source\main&quot;;&quot;$(SolutionDir)..\..\source\shared&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include\CFNetwork&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include\CoreFoundation\GNUCompatibility&quot;;&quot;$(SolutionDir)..\..\..\kJams\External\QuickTime SDK&quot;;&quot;$(SolutionDir)..\..\..\kJams\External\QuickTime SDK\QuickTime&quot;"
-				PreprocessorDefinitions="__WIN32__;_WIN32;WIN32;_DEBUG;_WINDOWS;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CFTEST_;_MIN_CF_"
-				MinimalRebuild="false"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				ProgramDataBaseFileName="$(IntDir)\pdbs\$(ProjectName).pdb"
-				WarningLevel="3"
-				DebugInformationFormat="3"
-				CallingConvention="0"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="comctl32.lib Ws2_32.lib CFLite_Debug.lib msvcrtd.lib"
-				OutputFile="$(OutDir)\$(SolutionName) Debug.exe"
-				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\bin&quot;;&quot;$(SolutionDir)..\..\..\kJams\External\QuickTime SDK\Libraries&quot;"
-				IgnoreAllDefaultLibraries="false"
-				IgnoreDefaultLibraryNames="LIBCMT;CFLite"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)\pdbs\$(ProjectName).pdb"
-				SubSystem="2"
-				OptimizeReferences="1"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="Copying EXE into Bundle..."
-				CommandLine="post_build.bat $(ConfigurationName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -223,7 +133,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\source&quot;;&quot;$(SolutionDir)..\..\source\headers&quot;;&quot;$(SolutionDir)..\..\source\main&quot;;&quot;$(SolutionDir)..\..\source\shared&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include\CFNetwork&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\source&quot;;&quot;$(SolutionDir)..\..\source\headers&quot;;&quot;$(SolutionDir)..\..\source\main&quot;;&quot;$(SolutionDir)..\..\source\shared&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include\CFNetwork&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include\std&quot;"
 				PreprocessorDefinitions="__WIN32__;_WIN32;WIN32;_WINDOWS;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CFTEST_;_MIN_CF_;_JUST_CFTEST_"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -277,93 +187,6 @@
 				Name="VCPostBuildEventTool"
 				Description="Creating Bundle..."
 				CommandLine="python ../post_build_cftest.py VS 32 $(ConfigurationName) libressl"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="1"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				Description="Building Package..."
-				CommandLine="pre_build.bat $(ConfigurationName)"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\source&quot;;&quot;$(SolutionDir)..\..\source\main&quot;;&quot;$(SolutionDir)..\..\source\shared&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include&quot;;&quot;$(SolutionDir)..\..\..\CF\CFNetwork\include\CFNetwork&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include&quot;;&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\include\CoreFoundation\GNUCompatibility&quot;;&quot;$(SolutionDir)..\..\..\kJams\External\QuickTime SDK&quot;;&quot;$(SolutionDir)..\..\..\kJams\External\QuickTime SDK\QuickTime&quot;"
-				PreprocessorDefinitions="__WIN32__;_WIN32;WIN32;_WINDOWS;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CFTEST_;_MIN_CF_"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				ProgramDataBaseFileName="$(IntDir)\pdbs\$(ProjectName).pdb"
-				WarningLevel="3"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="comctl32.lib Ws2_32.lib CFLite.lib msvcrt.lib"
-				OutputFile="$(OutDir)\$(SolutionName).exe"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)..\..\..\CF\opencflite-476.17.2\dist\bin&quot;;&quot;$(SolutionDir)..\..\..\kJams\External\QuickTime SDK\Libraries&quot;"
-				IgnoreDefaultLibraryNames="LIBCMT"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)\pdbs\$(ProjectName).pdb"
-				SubSystem="2"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="Copying EXE into Bundle..."
-				CommandLine="post_build.bat $(ConfigurationName)"
 			/>
 		</Configuration>
 	</Configurations>

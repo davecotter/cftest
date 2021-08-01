@@ -8,7 +8,7 @@
 #include <stdarg.h>
 #include "CFUtils.h"
 
-#if !defined(_CFTEST_) && !_PaddleServer_
+#if !defined(_CFTEST_) && !_PaddleServer_ && !defined(_ROSE_)
 	#define	HAS_CDHMSF		1
 	#include "CDHMSF.h"
 #else
@@ -16,12 +16,15 @@
 #endif
 
 #if _QT_
+
 	#if defined(_JUST_CFTEST_)
 		//	we are JUST CFTEST
 	#else
-		#include "BasicTypes.h"
 		#include <QString>
 		#define _HAS_QSTR_
+
+		#include "BasicTypes.h"
+		#include <QFontMetricsF>
 	#endif
 #endif
 
@@ -36,6 +39,18 @@
 		#include <Carbon/Carbon.h>
 	#endif
 #endif
+
+typedef enum {
+	EnquoteType_PLAIN,
+	EnquoteType_SMART,
+	EnquoteType_SINGLE_PLAIN,
+	EnquoteType_SINGLE_SMART,
+	EnquoteType_GRAVE,
+	EnquoteType_PARENS,
+	EnquoteType_PERCENTS,
+	EnquoteType_SPACES,
+	EnquoteType_NO_BREAK_SPACES
+} EnquoteType;
 
 /****************************************************************/
 char *		mt_vsnprintf(const char *formatZ, va_list &args);
@@ -111,6 +126,39 @@ SuperString		UTF8BytesToString(UInt32 bytesL);
 SuperString		PtrToString(const void *ptr);
 
 /****************************************************************/
+typedef enum {
+	UTF_SpecialChar_HYPHEN,
+	UTF_SpecialChar_ZH_COLON,
+	UTF_SpecialChar_NO_BREAK_SPACE,
+	UTF_SpecialChar_EM_DASH,
+	UTF_SpecialChar_EN_DASH,
+	UTF_SpecialChar_FIGURE_DASH,
+	UTF_SpecialChar_MINUS_SIGN,
+	UTF_SpecialChar_SIX_PER_EM_SPACE,
+	UTF_SpecialChar_RED_ALERT,
+	UTF_SpecialChar_FULLWIDTH_PERCENT,
+
+	UTF_SpecialChar_KEY_CHANGE_FLAT,
+	UTF_SpecialChar_KEY_CHANGE_SHARP,
+	UTF_SpecialChar_KEY_CHANGE_BAR,
+	UTF_SpecialChar_KEY_CHANGE_DIAMOND,
+	UTF_SpecialChar_KEY_CHANGE_TRIANGLE,
+
+	UTF_SpecialChar_LETTER_YOO,	//	stupid hack for Qt for "AboUt kJams" shenanegens
+	UTF_SpecialChar_EM_SPACE,
+	UTF_SpecialChar_e_ACUTE,
+	UTF_SpecialChar_SMALL_ASTERISK,
+	UTF_SpecialChar_BLACK_DOWN_TRIANGLE,
+	UTF_SpecialChar_COPYRIGHT,
+
+	UTF_SpecialChar_NUMTYPES
+} UTF_SpecialChar;
+
+SuperString		GetSpecialChar(UTF_SpecialChar charType);
+SuperString		GetHyphen();
+
+/****************************************************************/
+
 typedef struct {
 	const char	*replaceZ;
 	const char	*withZ;
@@ -323,10 +371,7 @@ public:
 	SuperString(const UTF32Char *strZ, size_t sizeL = -1);
 	SuperString(const UTF32Char ch);
 	
-	SuperString(CFURLRef urlRef) {
-		SetNULL();		
-		Set(CFURLGetString(urlRef));
-	}
+	SuperString(CFURLRef urlRef);
 	
 	SuperString(const char *strZ = NULL, CFStringEncoding encoding = kCFStringEncodingInvalidId) {
 		SetNULL();		
@@ -405,7 +450,11 @@ public:
 	/************************************/
 	void	Set_p(ConstStr255Param strZ, CFStringEncoding encoding = kCFStringEncodingInvalidId);
 	
-	void	Set(CFAbsoluteTime absT, SS_TimeType timeType = SS_Time_SHORT, CFTimeInterval epochT = 0);
+	SuperString&	Set(
+		CFAbsoluteTime	absT, 
+		SS_TimeType		timeType	= SS_Time_SHORT, 
+		CFTimeInterval	epochT		= 0,
+		CFTimeZoneRef	timeZoneRef	= NULL);
 
 	void	Set(const char *strZ) {
 		CCFString		myRef(CFStringCreateWithC(strZ));
@@ -418,6 +467,13 @@ public:
 	SuperString&	Escape(SuperString allowedStr = SuperString(), SuperString disallowedStr = SuperString());
 	void			UnEscape();
 	
+	bool			ConformsToDateFormat(SS_TimeType timeType);
+	SS_TimeType		GetTimeType();
+
+	#if _QT_ && !_JUST_CFTEST_
+	static SuperString		GetBestPrettyDate(CFDateRef dateRef, const Rect& frameR, QFontMetricsF& metricsF);
+	#endif
+
 	bool	IsJSON() const;
 	void	UnEscapeJSON();
 	void	EscapeJSON();
@@ -572,9 +628,15 @@ public:
 	SuperString&		Scramble(short rotateS = kBitsToRotate);
 	SuperString&		UnScramble(short rotateS = -kBitsToRotate);
 	
-	SuperString&		Enquote(bool smartB = false);
+	SuperString&		Enquote(EnquoteType quoteType, bool only_if_notB = false);
+	SuperString&		Enquote(bool smartB = false) { return Enquote((EnquoteType)smartB); }
+	SuperString			Quoted(EnquoteType quoteType = EnquoteType_SMART) const;
+
 	SuperString&		NoQuotes(bool recoverB = true);
 	SuperString&		trim();
+
+	//	wrap with full-width space chars
+	SuperString&		Enspace();
 	
 	SuperString&		InsertSpaces(size_t everyNth);
 
@@ -670,6 +732,9 @@ public:
 		return GetIndChar(utf8().size() - (indexL + 1));
 	}
 	
+	SuperString&	IncNumberAtEnd();
+	SuperString&	RemoveNumberAtEnd();
+
 	SuperString&	InsertAt(size_t posL, const SuperString& str, bool from_endB = false);
 	SuperString&	ToUpper();
 	SuperString&	ToLower();
@@ -739,17 +804,13 @@ public:
 */
 
 	void			CopyAs_wchar(wchar_t *bufA, size_t buf_sizeL) const;
-	CFURLRef		CopyAs_URLRef(bool escapedB = true) const {
-		SuperString		str(*this);
-		
-		if (escapedB) {
-			str.Escape();
-		}
-		
-		return CFURLCreateWithString(kCFAllocatorDefault, str.ref(), NULL);
-	}
+	CFURLRef		CopyAs_URLRef(bool escapeB = true) const;
 	
-	CFAbsoluteTime	GetAs_CFAbsoluteTime(SS_TimeType timeType = SS_Time_SHORT, CFTimeInterval epochT = 0) const;
+	CFAbsoluteTime	GetAs_CFAbsoluteTime(
+		SS_TimeType		timeType = SS_Time_SHORT, 
+		CFTimeInterval	epochT = 0,
+		CFTimeZoneRef	timeZoneRef = NULL) const;
+		
 	OSType			GetAs_OSType(bool justifyB = false) const;
 	SInt32			GetAs_SInt32() const	{	return ::atoi(c_str());	}
 
@@ -772,6 +833,12 @@ public:
 
 	void			Set_Ptr(Ptr ptrP);
 	Ptr				GetAs_Ptr() const;
+	
+	template <typename T>
+	T				GetAs_PtrT() const
+	{
+		return reinterpret_cast<T>(GetAs_Ptr());
+	}
 
 	long			value_long() const	{	return GetAs_SInt32();	}
 	UInt32			hex_to_ulong()		{	return Hex_To_ULong(c_str());	}
@@ -982,6 +1049,7 @@ SuperString		TruncEscapedToNum(size_t numS, SuperString str);
 typedef std::deque<SuperString>								SStringDeq;
 typedef std::vector<SuperString>							SStringVec;
 typedef std::map<SuperString, SuperString>					SStringMap;
+typedef std::map<SuperString, SInt32>						SStringToSInt32Map;
 typedef	std::vector<std::pair<SuperString, SuperString> >	SStringPairVec;
 typedef std::set<SuperString>								SStringSet;
 typedef std::map<UInt32, SuperString>						UIntToStringMap;
@@ -993,11 +1061,10 @@ CFDictionaryRef		CopyStringMapToDictionary(CFDictionaryRef dictRef);
 SuperString		TimeToString(SInt32 curT);				//	in records (300ths), not sectors (75ths)
 SInt32			StringToTime(const SuperString& str);	//	in records (300ths), not sectors (75ths)
 
-#define		_HAS_PROG_		(_KJAMS_ && !_QT_)
+#define		_HAS_PROG_		(_KJAMS_)
 
 class	Sort_Str_LessThan {
 	#if _HAS_PROG_
-	//	qtfix
 	bool		i_progB;
 	#endif
 
