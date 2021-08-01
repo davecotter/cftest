@@ -10,7 +10,7 @@ git proj folder
 		** other files
 	CF
 		python
-		** the python files from the zip file
+			** the python files from the zip file
 		
 email me if you need help
 
