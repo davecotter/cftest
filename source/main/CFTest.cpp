@@ -22,6 +22,7 @@
 	#define		kTest_LocToEncoding					0
 	#define		kTest_DateTime						0
 	#define		kTest_TimeZone						1
+	#define		kTest_Sprintf						0
 	#define		kTest_Bundle						0
 #else
 	#define		kTest_BitDepthAndPtrSize			1
@@ -32,6 +33,7 @@
 	#define		kTest_LocToEncoding					1
 	#define		kTest_DateTime						1
 	#define		kTest_TimeZone						1
+	#define		kTest_Sprintf						1
 	#define		kTest_Bundle						1
 #endif
 
@@ -262,6 +264,11 @@ class Array_Each_CFTimeZone {
 				SuperString			msgStr("Set your computer's time zone to:\n");
 
 				msgStr += test_tzDisplayNameStr.Enquote(true);
+
+				if (ExtraLogging()) {
+					Logf("CFTimeZone testing: %s\n", test_tzDisplayNameStr.utf8Z());
+				}
+
 				CFWaitForKeyPress(msgStr.ref());
 				CFTimeZoneResetSystem();
 			}
@@ -306,7 +313,7 @@ void	CFTest()
 	SuperString		resultStr;
 	
 	if (!IsDefaultEncodingSet()) {
-		SetDefaultEncoding(kCFStringEncodingASCII);
+		SetDefaultEncoding(kAppDefaultTextEncoding);
 	}
 	
 	CCFLog()(CFSTR("\n--------------------New CFTest Log----------------\n"));
@@ -466,7 +473,7 @@ void	CFTest()
 		}
 
 		{
-			SuperString				jStr(GetAccentedString());
+			SuperString				accentedStr(GetAccentedString());
 			
 			#if defined(__WIN32__)
 				#define		kConvertEncode		kCFStringEncodingWindowsLatin1
@@ -475,19 +482,28 @@ void	CFTest()
 			#endif
 			
 			ustring				j;
-			CopyCFStringToUString(jStr.ref(), j, kConvertEncode);
+			CopyCFStringToUString(accentedStr.ref(), j, kConvertEncode);
 			
-			SuperString			convertedJ;  convertedJ.Set(j, kConvertEncode);
+			SuperString			convertedStr;  convertedStr.Set(j, kConvertEncode);
 			
 			if (ExtraLogging()) {
 				CCFLog()(resultStr.ssprintf(
 					"The next line should read <%s>\n%s\n", 
-					jStr.utf8Z(), convertedJ.utf8Z()).ref());
+					accentedStr.utf8Z(), convertedStr.utf8Z()).ref());
 				
-				CCFLog()(resultStr.ssprintf("conversion: %s\n", convertedJ == jStr ? "Success!" : "$$ FAILED!").ref());
+				CCFLog()(resultStr.ssprintf("conversion: %s\n", convertedStr == accentedStr ? "Success!" : "$$ FAILED!").ref());
 			}
 
-			CFReportUnitTest("Encoding Conversion", convertedJ != jStr);
+			SuperString			inlineStr("ñéüî");
+
+			CFReportUnitTest("Encoding Conversion", convertedStr != accentedStr);
+
+			if (inlineStr != accentedStr) {
+				CCFLog(true)(inlineStr.ref());
+				CCFLog(true)(accentedStr.ref());
+			}
+
+			CFReportUnitTest("Source Code Encoding", inlineStr != accentedStr);
 		}
 
 		CFStringEncoding		encoding;
@@ -572,7 +588,7 @@ void	CFTest()
 			const SuperString		&curLang(*it);
 			CFStringEncoding		oldEnc(LanguageRegionToEncoding(curLang));
 			CFStringEncoding		newEnc(CFLangRgnStrToEncoding(curLang));
-			SuperString				formatStr("Convert Locale Encoding: ‚Äú%s‚Äù (%s, %s)", kCFStringEncodingUTF8);
+			SuperString				formatStr("Convert Locale Encoding: “%s” (%s, %s)", kCFStringEncodingUTF8);
 			SuperString				charSetName(CFStringConvertEncodingToIANACharSetName(oldEnc));
 			SuperString				encodingName(CFStringGetNameOfEncoding(oldEnc));
 
@@ -645,7 +661,7 @@ void	CFTest()
 			const SuperString&	correct_localIdStr(it->second);
 			
 			SuperString			localIdStr(CFLocaleCreateCanonicalLanguageIdentifierFromString(kCFAllocatorDefault, langStr.ref()),	false);
-			SuperString			formatStr("Convert Locale to Lang ID: ‚Äú%s‚Äù", kCFStringEncodingUTF8);
+			SuperString			formatStr("Convert Locale to Lang ID: “%s”", kCFStringEncodingUTF8);
 			
 			formatStr.ssprintf(NULL, langStr.utf8Z());
 			
@@ -988,19 +1004,34 @@ void	CFTest()
 		//	can you create time zones
 		#if 1
 		{
-			SuperString			tzStr("Europe/Berlin");
-			CCFTimeZone			curTz(CFTimeZoneCreateWithName(
+			SuperString			tzStr("Europe/Helsinki");
+			CCFTimeZone			testTz(CFTimeZoneCreateWithName(
 				kCFAllocatorDefault, tzStr.ref(), false));
 
-			CFReportUnitTest("Creating Time Zones", curTz.Get() == NULL);
+			CFReportUnitTest("Creating Time Zones", testTz.Get() == NULL);
 
 			if (ExtraLogging()) {
 
-				if (curTz.ref()) {
-					CCFDictionary		dict(CFTimeZoneCopyDict(curTz));
+				if (testTz.ref()) {
+					CCFDictionary		dict(CFTimeZoneCopyDict(testTz));
 
-					CCFLog(true)(curTz);
+					CCFLog(true)(testTz);
 					CCFLog(true)(dict);
+
+					//	test getting helsinki time via GMT offset
+					if ((0)) {
+						CFAbsoluteTime		absT(CFAbsoluteTimeGetCurrent());
+						CCFTimeZone			curTz(CFTimeZoneCopyDefault());
+						bool				is_dstB(!!CFTimeZoneIsDaylightSavingTime(curTz, absT));
+						CFTimeInterval		gmt_plus_2_intervalF((2 + is_dstB) * kEventDurationHour); 
+						CCFTimeZone			gmt_plus_2Tz(
+							CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, gmt_plus_2_intervalF));
+						CCFDictionary		dict(CFTimeZoneCopyDict(gmt_plus_2Tz));
+
+						CCFLog(true)(CFSTR("----------------"));
+						CCFLog(true)(gmt_plus_2Tz);
+						CCFLog(true)(dict);
+					}
 				} else {
 					tzStr.Enquote(true);
 					tzStr.append(" doesn't exist");
@@ -1197,6 +1228,26 @@ void	CFTest()
 			tz_unit_test_array.for_each(Array_Each_CFTimeZone());
 		}
 		#endif
+	}
+
+	if (kTest_Sprintf) {
+		#if _QT6_
+			//	 qt6
+		#else
+			//	 qt5
+		#endif
+
+		SuperString			testStr("testing “%s” yeah");
+		SuperString			correctStr("testing “123” yeah");
+
+		testStr.ssprintf(NULL, "123");
+
+		if (ExtraLogging()) {
+			CCFLog(true)(testStr.ref());
+			CCFLog(true)(correctStr.ref());
+		}
+
+		CFReportUnitTest("sprintf", testStr != correctStr);
 	}
 
 	if (kTest_Bundle) {

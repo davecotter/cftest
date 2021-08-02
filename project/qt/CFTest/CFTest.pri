@@ -22,12 +22,31 @@ DEFINES += _MIN_CF_
 DEFINES += _JUST_CFTEST_
 CONFIG += c++11
 
+greaterThan(QT_MAJOR_VERSION, 5) {
+	DEFINES += _QT6_=1
+	_QT6_ = 1
+
+	# later you can do this:
+	#	equals(_QT6_, 1) {
+	#		do something here
+	#	}
+
+	win32 {
+		CONFIG += no_utf8_source
+		QMAKE_CXXFLAGS += /source-charset:.10000	# macroman code page
+	}
+} else {
+	DEFINES += _QT6_=0
+	_QT6_ = 0
+}
+
 macx {
 	DEFINES += OPT_MACOS=1
 	DEFINES += OPT_WINOS=0
 
 	# on mac, you can ONLY build 64bit, there is no 32bit compiler
 	QMAKE_TARGET.arch = x86_64
+
 } else {
 	DEFINES += OPT_MACOS=0
 	DEFINES += OPT_WINOS=1
@@ -99,7 +118,7 @@ macx {
 	# QMAKE_MAC_SDK = macosx10.13
 	QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 
-	QMAKE_CXXFLAGS_WARN_ON += -Wall -Wno-unused-parameter
+	QMAKE_CXXFLAGS_WARN_ON += -Wall -Wno-unused-parameter -Wno-invalid-source-encoding
 
 	SOURCES += \
 		$${DIR_CFNET}NetServices/CFNetworkAddress.c

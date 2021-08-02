@@ -61,7 +61,7 @@
 		75B619371AB0F0910078CC1D /* CCFError.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CCFError.cpp; path = shared/CCFError.cpp; sourceTree = "<group>"; };
 		75B619381AB0F0910078CC1D /* CCFError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CCFError.h; path = shared/CCFError.h; sourceTree = "<group>"; };
 		75B6D57C1F0B25AD008F5ADB /* CFUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CFUtils.h; path = shared/CFUtils.h; sourceTree = "<group>"; };
-		75CFC3AA0E181B2900F15957 /* CFTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFTest.cpp; path = main/CFTest.cpp; sourceTree = "<group>"; };
+		75CFC3AA0E181B2900F15957 /* CFTest.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFTest.cpp; path = main/CFTest.cpp; sourceTree = "<group>"; };
 		75D277B914BD6FF10042AAFD /* CFNetworkTest.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFNetworkTest.cpp; path = main/CFNetworkTest.cpp; sourceTree = "<group>"; };
 		75D277BA14BD6FF10042AAFD /* CWebServerTest.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CWebServerTest.cpp; path = main/CWebServerTest.cpp; sourceTree = "<group>"; };
 		8DD76F7E0486A8DE00D96B5E /* CFTest Debug */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "CFTest Debug"; sourceTree = BUILT_PRODUCTS_DIR; };

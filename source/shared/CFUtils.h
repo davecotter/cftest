@@ -1073,8 +1073,8 @@ typedef enum {
 	SS_Time_COMPACT_DATE_REVERSE,	//	2012/09/01
 	SS_Time_NAKED,					//	float, double, or int, 
 	SS_Time_DOT_NET,				//	/Date(1494646923590+0000)/, DataContractJsonSerializer
-	SS_Time_TIMESTAMP,				//	"20120401182543234"	helsinki time
-	SS_Time_LOG2, 					//	"2009-01-24 18:20:16 -0300" helsinki time (hacked)
+	SS_Time_TIMESTAMP_HELSINKI,		//	"20120401182543234"	helsinki time
+	SS_Time_LOG_HELSINKI, 			//	"2009-01-24 18:20:16 -0300" helsinki time (hacked)
 	SS_Time_SYSTEM_LONG, 			//	something like SS_Time_LONG_PRETTY
 
 	//	http://stackoverflow.com/questions/10286204/the-right-json-date-format

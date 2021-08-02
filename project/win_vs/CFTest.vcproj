@@ -75,7 +75,7 @@
 				IgnoreDefaultLibraryNames="LIBCMT;CFLite"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)\pdbs\$(ProjectName).pdb"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="1"
 				TargetMachine="1"
 			/>

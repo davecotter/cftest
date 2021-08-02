@@ -17,7 +17,7 @@
 	#include "CTenFive_Funcs.h"
 #endif
 
-#if defined(kDEBUG) || defined(_CFTEST_) || defined(rDEBUG)
+#if defined(_CFTEST_) || defined(rDEBUG)
 	bool	g_debugStringsB = true;
 #else
 	bool	g_debugStringsB = false;
@@ -404,7 +404,9 @@ bool				IsDefaultEncodingSet()
 
 void				SetDefaultEncoding(CFStringEncoding encoding)
 {
-	s_file_encoding = encoding;
+	if (s_file_encoding != encoding) {
+		s_file_encoding = encoding;
+	}
 }
 
 static CFStringEncoding	ValidateEncoding(CFStringEncoding encoding = kCFStringEncodingInvalidId)
@@ -412,7 +414,7 @@ static CFStringEncoding	ValidateEncoding(CFStringEncoding encoding = kCFStringEn
 	if (encoding == kCFStringEncodingInvalidId) {
 
 		if (!IsDefaultEncodingSet()) {
-			SetDefaultEncoding(kCFStringEncodingMacRoman);
+			SetDefaultEncoding(kAppDefaultTextEncoding);
 			CCFLog(true)(CFSTR("$$$ Default encoding not set!"));	//	must be after to avoid recursion
 		}
 
@@ -2196,18 +2198,18 @@ static CFLocaleRef			CFLocaleCreateDefaultEnglishUS()
 //	http://userguide.icu-project.org/formatparse/datetime
 static const char*	GetFormatStr(SS_TimeType timeType)
 {
-	#define		kTimeFormat_SHORT		"EEE, d MMM y H:mm:ss z"		//	Thu, 23 Jul 2009 15:15:21 GMT
-	#define		kTimeFormat_LONG		"MMMM d, y H:mm:ss a z"			//	August 29, 2008 15:36:59 PM PDT
-	#define		kTimeFormat_LONG_12		"MMMM d, y h:mm:ss a z"			//	August 29, 2008 03:36:59 PM PDT
-	#define		kTimeFormat_LONG_PRETTY	"eeee, MMMM d, y - h:mm a z"	//	Thursday, March 29, 2012 - 3:31 PM PDT
-	#define		kTimeFormat_LOG			"y-MM-dd H:mm:ss.SSS Z"			//	2009-01-24 18:20:16 or 2009-11-24 20:00:47.586 -0800, or kTimeFormat_JSON
-	#define		kTimeFormat_SHORT_CDZ	"M/dd/y z"						//	5/13/2009 PT
-	#define		kTimeFormat_SHORT_CDO	"M/dd/y"						//	5/13/2009
-	#define		kTimeFormat_SHORT_YMD	"y/M/dd"						//	2012/09/01
-	#define		kTimeFormat_timestamp	"yyyyMMddhhmmssSSS"				//	"20120401182543234"	helsinki time
-	#define		kTimeFormat_LOG2		"yyyy-MM-dd hh:mm:ss Z"			//	"2009-01-24 18:20:16 -0300" helsinki time (hacked)
-	#define		kTimeFormat_JSON		"y-MM-dd'T'HH:mm:ss.SSS'Z'"		//	"2009-11-24T18:20:16Z"
-//	#define		kTimeFormat_SHORT_12	"EEE, d MMM y h:mm:ss z"		//	Thu, 23 Jul 2009 3:15:21 PM GMT
+	#define		kTimeFormat_SHORT			"EEE, d MMM y H:mm:ss z"		//	Thu, 23 Jul 2009 15:15:21 GMT
+	#define		kTimeFormat_LONG			"MMMM d, y H:mm:ss a z"			//	August 29, 2008 15:36:59 PM PDT
+	#define		kTimeFormat_LONG_12			"MMMM d, y h:mm:ss a z"			//	August 29, 2008 03:36:59 PM PDT
+	#define		kTimeFormat_LONG_PRETTY		"eeee, MMMM d, y - h:mm a z"	//	Thursday, March 29, 2012 - 3:31 PM PDT
+	#define		kTimeFormat_LOG				"y-MM-dd H:mm:ss.SSS Z"			//	2009-01-24 18:20:16 or 2009-11-24 20:00:47.586 -0800, or kTimeFormat_JSON
+	#define		kTimeFormat_SHORT_CDZ		"M/dd/y z"						//	5/13/2009 PT
+	#define		kTimeFormat_SHORT_CDO		"M/dd/y"						//	5/13/2009
+	#define		kTimeFormat_SHORT_YMD		"y/M/dd"						//	2012/09/01
+	#define		kTimeFormat_TS_HELSINKI		"yyyyMMddhhmmssSSS"				//	"20120401182543234"	helsinki time
+	#define		kTimeFormat_LOG_HELSINKI	"yyyy-MM-dd hh:mm:ss Z"			//	"2009-01-24 18:20:16 -0300" helsinki time (hacked)
+	#define		kTimeFormat_JSON			"y-MM-dd'T'HH:mm:ss.SSS'Z'"		//	"2009-11-24T18:20:16Z"
+//	#define		kTimeFormat_SHORT_12		"EEE, d MMM y h:mm:ss z"		//	Thu, 23 Jul 2009 3:15:21 PM GMT
 
 	
 	const		char*					strZ = "";
@@ -2221,8 +2223,8 @@ static const char*	GetFormatStr(SS_TimeType timeType)
 		case SS_Time_COMPACT_DATE_TZ:			strZ = kTimeFormat_SHORT_CDZ;		break;
 		case SS_Time_COMPACT_DATE_ONLY: 		strZ = kTimeFormat_SHORT_CDO;		break;
 		case SS_Time_COMPACT_DATE_REVERSE:		strZ = kTimeFormat_SHORT_YMD;		break;
-		case SS_Time_TIMESTAMP:					strZ = kTimeFormat_timestamp;		break;
-		case SS_Time_LOG2:						strZ = kTimeFormat_LOG2;			break;
+		case SS_Time_TIMESTAMP_HELSINKI:		strZ = kTimeFormat_TS_HELSINKI;		break;
+		case SS_Time_LOG_HELSINKI:				strZ = kTimeFormat_LOG_HELSINKI;	break;
 		case SS_Time_JSON:						strZ = kTimeFormat_JSON;			break;
 
 		default: {
@@ -2299,7 +2301,7 @@ static SuperString		CFTimeZoneGetHelsinkiOffsetStr()
 {			
 	SuperString		helsinkiTimeStr;
 	
-	helsinkiTimeStr.Set(CFAbsoluteTimeGetCurrent(), SS_Time_LOG2);
+	helsinkiTimeStr.Set(CFAbsoluteTimeGetCurrent(), SS_Time_LOG_HELSINKI);
 	helsinkiTimeStr.rSplit(" ", NULL, true);
 	helsinkiTimeStr.prepend(" ");
 	return helsinkiTimeStr;
@@ -2307,7 +2309,18 @@ static SuperString		CFTimeZoneGetHelsinkiOffsetStr()
 
 static CFTimeZoneRef	CFTimeZoneCreateHelsinki()
 {
-	return CFTimeZoneCreateWithName(kCFAllocatorDefault, CFSTR("Europe/Helsinki"), false);
+	CFTimeZoneRef		helsinkiTz(CFTimeZoneCreateWithName(kCFAllocatorDefault, CFSTR("Europe/Helsinki"), false));
+
+	if (helsinkiTz == NULL) {
+		CFAbsoluteTime		absT(CFAbsoluteTimeGetCurrent());
+		CCFTimeZone			curTz(CFTimeZoneCopyDefault());
+		bool				is_dstB(CFTimeZoneIsDaylightSavingTime(curTz, absT));
+		CFTimeInterval		gmt_plus_2_intervalF((2 + is_dstB) * kEventDurationHour);
+
+		helsinkiTz = CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, gmt_plus_2_intervalF);
+	}
+
+	return helsinkiTz;
 }
 
 /************************/
@@ -2433,7 +2446,7 @@ SuperString&				SuperString::Set(
 
 				CFDateFormatterSetFormat(formatterRef, formatStr.ref());
 
-				if (timeType == SS_Time_LOG2 || timeType == SS_Time_TIMESTAMP) {
+				if (timeType == SS_Time_LOG_HELSINKI || timeType == SS_Time_TIMESTAMP_HELSINKI) {
 					localTz.SetAndRetain(CFTimeZoneCreateHelsinki());
 				}
 			}
@@ -2530,7 +2543,7 @@ CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(
 			
 			CF_ASSERT(timeZoneRef == NULL);	//	always GMT
 			
-		} else if (timeType == SS_Time_LOG2) {
+		} else if (timeType == SS_Time_LOG_HELSINKI) {
 			SuperString		tempStr(timeStr);
 			
 			tempStr.rSplit(" ", NULL, true);
@@ -2540,7 +2553,7 @@ CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(
 			}
 			CF_ASSERT(timeZoneRef == NULL);	//	always GMT
 			
-		} else if (timeType == SS_Time_TIMESTAMP) {
+		} else if (timeType == SS_Time_TIMESTAMP_HELSINKI) {
 			formatStr.append(" Z");
 			timeStr.append(CFTimeZoneGetHelsinkiOffsetStr());
 			CF_ASSERT(timeZoneRef == NULL);	//	always GMT

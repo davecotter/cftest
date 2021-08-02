@@ -108,7 +108,7 @@ void		StockCheck(const SuperString& symbolStr)
 
 #endif // kStockChecker
 
-#if _QT_ || OPT_MACOS || 1
+#if _QT_ || OPT_MACOS
 int		main()
 #else
 int		WINAPI wWinMain(HINSTANCE h, HINSTANCE prev, LPWSTR cmd, int show)
