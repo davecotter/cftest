@@ -265,10 +265,6 @@ class Array_Each_CFTimeZone {
 
 				msgStr += test_tzDisplayNameStr.Enquote(true);
 
-				if (ExtraLogging()) {
-					Logf("CFTimeZone testing: %s\n", test_tzDisplayNameStr.utf8Z());
-				}
-
 				CFWaitForKeyPress(msgStr.ref());
 				CFTimeZoneResetSystem();
 			}
@@ -293,6 +289,7 @@ class Array_Each_CFTimeZone {
 
 		if (ExtraLogging()) {
 			CCFLog(true)(CFSTR("-------------------------------------------"));
+			Logf("%s ", test_tzDisplayNameStr.utf8Z());
 			CCFLog(true)(dict);
 		}
 
