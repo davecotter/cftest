@@ -79,14 +79,11 @@ bool				CFStringEqual(CFStringRef str1, CFStringRef str2, bool case_and_diacriti
 bool				CFStringLess(CFStringRef lhs, CFStringRef rhs, bool case_and_diacritic_sensitiveB = false);
 bool				CFStringIsEmpty(CFStringRef nameRef);
 
-#if (_QT_ || _QT6_) && OPT_WINOS
-	#define kAppDefaultTextEncoding		kCFStringEncodingUTF8
-#else
-	#define kAppDefaultTextEncoding		kCFStringEncodingMacRoman
-#endif
-
 void				SetDefaultEncoding(CFStringEncoding encoding);
 bool				IsDefaultEncodingSet();
+
+//	startup encoding but you don't have to use it
+CFStringEncoding	GetSourceTextEncodingDefault();
 
 ustring			&CopyCFStringToUString(
 									   CFStringRef			str, 

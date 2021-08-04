@@ -409,12 +409,24 @@ void				SetDefaultEncoding(CFStringEncoding encoding)
 	}
 }
 
+CFStringEncoding	GetSourceTextEncodingDefault()
+{
+	CFStringEncoding		encoding =
+		#if _QT6_ && OPT_WINOS && _KJAMS_
+			kCFStringEncodingWindowsLatin1;
+		#else
+			kCFStringEncodingMacRoman;
+		#endif
+
+	return encoding;
+}
+
 static CFStringEncoding	ValidateEncoding(CFStringEncoding encoding = kCFStringEncodingInvalidId)
 {
 	if (encoding == kCFStringEncodingInvalidId) {
 
 		if (!IsDefaultEncodingSet()) {
-			SetDefaultEncoding(kAppDefaultTextEncoding);
+			SetDefaultEncoding(GetSourceTextEncodingDefault());
 			CCFLog(true)(CFSTR("$$$ Default encoding not set!"));	//	must be after to avoid recursion
 		}
 
@@ -2314,7 +2326,7 @@ static CFTimeZoneRef	CFTimeZoneCreateHelsinki()
 	if (helsinkiTz == NULL) {
 		CFAbsoluteTime		absT(CFAbsoluteTimeGetCurrent());
 		CCFTimeZone			curTz(CFTimeZoneCopyDefault());
-		bool				is_dstB(CFTimeZoneIsDaylightSavingTime(curTz, absT));
+		bool				is_dstB(!!CFTimeZoneIsDaylightSavingTime(curTz, absT));
 		CFTimeInterval		gmt_plus_2_intervalF((2 + is_dstB) * kEventDurationHour);
 
 		helsinkiTz = CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, gmt_plus_2_intervalF);
@@ -2596,30 +2608,22 @@ SuperString&	SuperString::ssprintf(const char *formatZ0, ...)
 	
 	va_start(args, formatZ0);
 
-#if OPT_MACOS
 	if (formatStr.Contains("%@") || formatStr.Contains("$@")) {
 		CFDictionaryRef		optionsDict = NULL;
 
 		CF_ASSERT(!formatStr.Contains("%s"));
 		CF_ASSERT(!formatStr.Contains("$s"));
-#else
-		CCFDictionary		optionsDict;
-
-		optionsDict.SetValue_Ref(kCFStringPrintfEncoding, (SInt32)kCFStringEncodingUTF8);
-#endif
 		
 		Set(CFStringCreateWithFormatAndArguments(
 			kCFAllocatorDefault, 
 			optionsDict,
 			formatStr.ref(), 
 			args), false);
-#if OPT_MACOS
 	} else {
 		char		*sprintfBuf = mt_vsnprintf(formatStr.utf8Z(), args);
 		
 		Set(uc(sprintfBuf));
 	}
-#endif
 
 	va_end(args);
 	

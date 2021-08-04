@@ -1228,23 +1228,33 @@ void	CFTest()
 	}
 
 	if (kTest_Sprintf) {
+		if (ExtraLogging()) {
+			CCFLog()(CFSTR("------------------Sprintf---------------\n"));
+		}
 		#if _QT6_
 			//	 qt6
 		#else
 			//	 qt5
 		#endif
 
-		SuperString			testStr("testing Ò%sÓ yeah");
-		SuperString			correctStr("testing Ò123Ó yeah");
+		SuperString			testStr("testing Ò%sÓ %s, %s wow");
+		SuperString			test2Str("testing Ò%@Ó %@, %@ wow");
+		SuperString			correctStr("testing Ò123Ó –ŽŸ”, –ŽŸ” wow");
+		SuperString			str123("123");
+		SuperString			accentedGet(GetAccentedString());
+		SuperString			accentedInline("–ŽŸ”");
 
-		testStr.ssprintf(NULL, "123");
+		testStr.ssprintf(NULL, str123.utf8Z(), accentedGet.utf8Z(), accentedInline.utf8Z());
+		test2Str.ssprintf(NULL, str123.ref(), accentedGet.ref(), accentedInline.ref());
 
 		if (ExtraLogging()) {
-			CCFLog(true)(testStr.ref());
-			CCFLog(true)(correctStr.ref());
+			Logf("original : %s\n", correctStr.utf8Z());
+			Logf("sprintf'd: %s\n", testStr.utf8Z());
+			Logf("formatted: %s\n", test2Str.utf8Z());
 		}
 
-		CFReportUnitTest("sprintf", testStr != correctStr);
+		CFReportUnitTest("sprintf'd", testStr != correctStr);
+		CFReportUnitTest("formatted", test2Str != correctStr);
 	}
 
 	if (kTest_Bundle) {
