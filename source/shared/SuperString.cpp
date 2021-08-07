@@ -2215,6 +2215,8 @@ static const char*	GetFormatStr(SS_TimeType timeType)
 	#define		kTimeFormat_LONG_12			"MMMM d, y h:mm:ss a z"			//	August 29, 2008 03:36:59 PM PDT
 	#define		kTimeFormat_LONG_PRETTY		"eeee, MMMM d, y - h:mm a z"	//	Thursday, March 29, 2012 - 3:31 PM PDT
 	#define		kTimeFormat_LOG				"y-MM-dd H:mm:ss.SSS Z"			//	2009-01-24 18:20:16 or 2009-11-24 20:00:47.586 -0800, or kTimeFormat_JSON
+	#define		kTimeFormat_SHORT_TIME_12	"h:mm a"						//	3:23 PM
+	#define		kTimeFormat_SHORT_TIME_24	"H:mm"							//	15:23
 	#define		kTimeFormat_SHORT_CDZ		"M/dd/y z"						//	5/13/2009 PT
 	#define		kTimeFormat_SHORT_CDO		"M/dd/y"						//	5/13/2009
 	#define		kTimeFormat_SHORT_YMD		"y/M/dd"						//	2012/09/01
@@ -2232,7 +2234,10 @@ static const char*	GetFormatStr(SS_TimeType timeType)
 		case SS_Time_LONG_12:					strZ = kTimeFormat_LONG_12;			break;
 		case SS_Time_LONG_PRETTY:				strZ = kTimeFormat_LONG_PRETTY;		break;
 		case SS_Time_LOG:						strZ = kTimeFormat_LOG;				break;
-		case SS_Time_COMPACT_DATE_TZ:			strZ = kTimeFormat_SHORT_CDZ;		break;
+		case SS_Time_SHORT_12:					strZ = kTimeFormat_SHORT_TIME_12;	break;
+		case SS_Time_SHORT_24:					strZ = kTimeFormat_SHORT_TIME_24;	break;
+		case SS_Time_SHORT_J:					CF_ASSERT(0); break;
+		case SS_Time_COMPACT_DATE_TZ:			strZ = kTimeFormat_SHORT_TIME_12;	break;
 		case SS_Time_COMPACT_DATE_ONLY: 		strZ = kTimeFormat_SHORT_CDO;		break;
 		case SS_Time_COMPACT_DATE_REVERSE:		strZ = kTimeFormat_SHORT_YMD;		break;
 		case SS_Time_TIMESTAMP_HELSINKI:		strZ = kTimeFormat_TS_HELSINKI;		break;
@@ -2325,7 +2330,7 @@ static CFTimeZoneRef	CFTimeZoneCreateHelsinki()
 
 	if (helsinkiTz == NULL) {
 		CFAbsoluteTime		absT(CFAbsoluteTimeGetCurrent());
-		CCFTimeZone			curTz(CFTimeZoneCopyDefault());
+		CCFTimeZone			curTz(CFTimeZoneCopyCurrent_Mutex(0, false));
 		bool				is_dstB(!!CFTimeZoneIsDaylightSavingTime(curTz, absT));
 		CFTimeInterval		gmt_plus_2_intervalF((2 + is_dstB) * kEventDurationHour);
 
@@ -2338,9 +2343,9 @@ static CFTimeZoneRef	CFTimeZoneCreateHelsinki()
 /************************/
 static CFDateFormatterRef		CFDateFormatterCreate_JSON()
 {
-	CCFTimeZone							tz(CFTimeZoneCopyGMT());
-	SuperString							formatStr(GetFormatStr(SS_Time_JSON));
-	ScCFReleaser<CFDateFormatterRef>	formatterRef(CFDateFormatterCreate(
+	CCFTimeZone				tz(CFTimeZoneCopyGMT());
+	SuperString				formatStr(GetFormatStr(SS_Time_JSON));
+	CCFDateFormatter		formatterRef(CFDateFormatterCreate(
 		kCFAllocatorDefault, CFLocaleGetSystem(), 
 		kCFDateFormatterLongStyle, kCFDateFormatterLongStyle));
 	
@@ -2355,8 +2360,8 @@ SuperString&				SuperString::Set(
 	CFTimeInterval	epochT,
 	CFTimeZoneRef	timeZoneRef)
 {
-	ScCFReleaser<CFDateFormatterRef>	formatterRef;
-	CCFTimeZone							localTz;
+	CCFDateFormatter	formatterRef;
+	CCFTimeZone			localTz;
 	
 	if (timeZoneRef) {
 		localTz.SetAndRetain(timeZoneRef);
@@ -2421,7 +2426,7 @@ SuperString&				SuperString::Set(
 				} break;
 			}
 
-			ScCFReleaser<CFLocaleRef>			localeRef(CFLocaleCopyCurrent());
+			CCFLocale			localeRef(CFLocaleCopyCurrent_Mutex());
 			
 			formatterRef.adopt(CFDateFormatterCreate(
 				kCFAllocatorDefault, localeRef, dateFormat, timeFormat));
@@ -2432,13 +2437,16 @@ SuperString&				SuperString::Set(
 		} break;
 
 		default: {
-			ScCFReleaser<CFLocaleRef>			localeRef;
+			CCFLocale			localeRef;
 
 			if (
 				   timeType == SS_Time_LONG_PRETTY
 				|| timeType == SS_Time_SYSTEM_LONG
+				|| timeType == SS_Time_SHORT_12
+				|| timeType == SS_Time_SHORT_24
+				|| timeType == SS_Time_SHORT_J
 			) {
-				localeRef.adopt(CFLocaleCopyCurrent());
+				localeRef.adopt(CFLocaleCopyCurrent_Mutex());
 			} else {
 				localeRef.adopt(CFLocaleCreateDefaultEnglishUS());
 			}
@@ -2454,6 +2462,16 @@ SuperString&				SuperString::Set(
 				kCFAllocatorDefault, localeRef, formatStyle, formatStyle));
 
 			if (timeType != SS_Time_SYSTEM_LONG) {
+			
+				if (timeType == SS_Time_SHORT_J) {
+				
+					if (CFDateFormatterUses24HourTimeDiaplay()) {
+						timeType = SS_Time_SHORT_24;
+					} else {
+						timeType = SS_Time_SHORT_12;
+					}
+				}
+			
 				SuperString			formatStr(GetFormatStr(timeType));
 
 				CFDateFormatterSetFormat(formatterRef, formatStr.ref());
@@ -2468,7 +2486,8 @@ SuperString&				SuperString::Set(
 	}
 
 	if (localTz.ref() == NULL) {
-		localTz.adopt(CFTimeZoneCopyDefault());
+		localTz.adopt(CFTimeZoneCopyCurrent_Mutex(absT));
+
 	}
 	
 	CF_ASSERT(formatterRef.ref());
@@ -2500,16 +2519,16 @@ CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(
 	CFTimeInterval	epochT,
 	CFTimeZoneRef	timeZoneRef) const
 {
-	CFAbsoluteTime		timeT = 0;
+	CFAbsoluteTime		absT = 0;
 	
 	if (timeType == SS_Time_NAKED) {
-		timeT = GetAs_Double() - epochT;
+		absT = GetAs_Double() - epochT;
 		CF_ASSERT(timeZoneRef == NULL);	//	always GMT
 		
 	} else if (timeType == SS_Time_JSON) {
-		ScCFReleaser<CFDateFormatterRef>	formatterRef(CFDateFormatterCreate_JSON());
+		CCFDateFormatter	formatterRef(CFDateFormatterCreate_JSON());
 
-		CFDateFormatterGetAbsoluteTimeFromString(formatterRef, ref(), NULL, &timeT);
+		CFDateFormatterGetAbsoluteTimeFromString(formatterRef, ref(), NULL, &absT);
 		CF_ASSERT(timeZoneRef == NULL);	//	always GMT
 		
 	} else if (timeType == SS_Time_DOT_NET) {
@@ -2524,18 +2543,18 @@ CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(
 		
 		dateStr.rSplit("(");
 		dateStr.Split("+");
-		timeT = dateStr.GetAs_Double();
-		timeT *= kEventDurationMillisecond;
-		timeT -= epochT;
+		absT = dateStr.GetAs_Double();
+		absT *= kEventDurationMillisecond;
+		absT -= epochT;
 		CF_ASSERT(timeZoneRef == NULL);	//	always GMT
 		
 	} else {
-		ScCFReleaser<CFLocaleRef>			localeRef(CFLocaleCreateDefaultEnglishUS());
-		ScCFReleaser<CFDateFormatterRef>	formatterRef(CFDateFormatterCreate(
+		CCFLocale				localeRef(CFLocaleCreateDefaultEnglishUS());
+		CCFDateFormatter		formatterRef(CFDateFormatterCreate(
 			kCFAllocatorDefault, localeRef, 
 			kCFDateFormatterFullStyle, kCFDateFormatterFullStyle));
-		SuperString							formatStr(GetFormatStr(timeType));
-		SuperString							timeStr(*this);
+		SuperString				formatStr(GetFormatStr(timeType));
+		SuperString				timeStr(*this);
 
 		if (timeType == SS_Time_LOG && !Contains(".")) {
 
@@ -2580,15 +2599,15 @@ CFAbsoluteTime		SuperString::GetAs_CFAbsoluteTime(
 			if (timeZoneRef) {
 				localTz.SetAndRetain(timeZoneRef);
 			} else {
-				localTz.adopt(CFTimeZoneCopyDefault());
+				localTz.adopt(CFTimeZoneCopyCurrent_Mutex());
 			}
 
 			CFDateFormatterSetProperty(formatterRef, kCFDateFormatterTimeZone, localTz);
-			CFDateFormatterGetAbsoluteTimeFromString(formatterRef, timeStr.ref(), NULL, &timeT);
+			CFDateFormatterGetAbsoluteTimeFromString(formatterRef, timeStr.ref(), NULL, &absT);
 		}
 	}
 	
-	return timeT;
+	return absT;
 }
 
 //	formatZ0 is in MacRoman!

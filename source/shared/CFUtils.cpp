@@ -2296,54 +2296,103 @@ LongDateTime	CFDateToLongDateTime(CFDateRef dateRef)
 	return ldt;
 }
 
-CFLocaleRef			CFLocaleCopyCurrent_Mutex()
+// =================================================================================
+static CFLocaleRef		s_localeRef		= NULL;
+static CFTimeZoneRef	s_tzRef			= NULL;
+static CFTimeZoneRef	s_tzRef_noDst	= NULL;
+static int				s_is_24hB		= -1;
+
+CFLocaleRef					CFLocaleCopyCurrent_Mutex()
 {
-	static CFLocaleRef		s_ref = NULL;
-	
-	if (s_ref == NULL) {
-		s_ref = CFLocaleCopyCurrent();
+	if (s_localeRef == NULL) {
+		s_localeRef = CFLocaleCopyCurrent();
 	}
 	
-	CFRetainDebug(s_ref);
-	return s_ref;
+	CFRetainDebug(s_localeRef);
+	return s_localeRef;
 }
 
-static CFCalendarRef		CFCalendarCopyCurrent_Mutex()
+//	pass (0, false) if you need to test for DST
+//	passing true gives you an absolute timezone with no DST (but it works on windows)
+CFTimeZoneRef		CFTimeZoneCopyCurrent_Mutex(CFAbsoluteTime absT, bool hackB)
 {
-	static CFCalendarRef		s_ref = NULL;
+	CFTimeZoneRef		tzRef;
 	
-	if (s_ref == NULL) {
-		s_ref = CFCalendarCopyCurrent();
-	}
-
-	CFRetainDebug(s_ref);	
-	return s_ref;
-}
-
-static CFTimeZoneRef		CFCalendarCopyTimeZone_Mutex()
-{
-	static CFTimeZoneRef			s_ref = NULL;
-	
-	if (s_ref == NULL) {
-		ScCFReleaser<CFCalendarRef>		calendarRef(CFCalendarCopyCurrent_Mutex());
+	if (s_tzRef == NULL) {
+		s_tzRef = CFTimeZoneCopyDefault();
 		
-		s_ref = CFCalendarCopyTimeZone(calendarRef);
+		#if OPT_WINOS
+		if (hackB) {
+			CFTimeInterval		intervalF = CFTimeZoneGetSecondsFromGMT(s_tzRef, absT);
+
+			s_tzRef_noDst = CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorSystemDefault, intervalF);
+		}
+		#endif
 	}
 	
-	CFRetainDebug(s_ref);
-	return s_ref;
+	#if OPT_WINOS
+	if (hackB) {
+		tzRef = s_tzRef_noDst;
+	} else 
+	#endif
+	{
+		tzRef = s_tzRef;
+	}
+	
+	CFRetainDebug(tzRef);
+	return tzRef;
 }
+
+bool			CFDateFormatterUses24HourTimeDiaplay()
+{
+	if (s_is_24hB == -1) {
+		CCFLocale			localeRef(CFLocaleCopyCurrent_Mutex());
+		CCFDateFormatter	formatterRef(CFDateFormatterCreate(
+			kCFAllocatorDefault, localeRef, kCFDateFormatterNoStyle, kCFDateFormatterShortStyle));
+		CCFDate				dateRef(CFDateCreateCurrent());
+		SuperString			dateStr(CFDateFormatterCreateStringWithDate(
+			kCFAllocatorDefault, formatterRef, dateRef));
+		SuperString			amStr((CFStringRef)CFDateFormatterCopyProperty(formatterRef, kCFDateFormatterAMSymbol));
+		SuperString			pmStr((CFStringRef)CFDateFormatterCopyProperty(formatterRef, kCFDateFormatterPMSymbol));
+		
+		s_is_24hB = !(dateStr.Contains(amStr) || dateStr.Contains(pmStr)); 
+	}
+
+	return s_is_24hB;
+}
+
+#define		CFReleaseClear(_ref)	\
+	if (_ref) {						\
+		CFReleaseDebug(_ref);		\
+		_ref = NULL; }
+
+void			CFLocaleResetSystem()
+{
+	CFReleaseClear(s_localeRef);
+	CFReleaseClear(s_tzRef);
+	CFReleaseClear(s_tzRef_noDst);
+	s_is_24hB = -1;
+
+	CFTimeZoneResetSystem();
+	
+	CCFLocale					cf1(CFLocaleCopyCurrent_Mutex());
+	CCFTimeZone					cf3(CFTimeZoneCopyCurrent_Mutex());
+
+	CFDateFormatterUses24HourTimeDiaplay();
+}
+
+// =================================================================================
 
 CFDateRef		CFDateCreateWithGregorian(const CFGregorianDate& gregDate)
 {
-	CCFTimeZone		timeZoneRef(CFCalendarCopyTimeZone_Mutex());
+	CCFTimeZone		timeZoneRef(CFTimeZoneCopyCurrent_Mutex());
 	
 	return CFDateCreate(kCFAllocatorDefault, CFGregorianDateGetAbsoluteTime(gregDate, timeZoneRef));
 }
 
 CFGregorianDate	CFDateGetGregorian(CFDateRef dateRef)
 {
-	CCFTimeZone		timeZoneRef(CFCalendarCopyTimeZone_Mutex());
+	CCFTimeZone		timeZoneRef(CFTimeZoneCopyCurrent_Mutex());
 	
 	return CFAbsoluteTimeGetGregorianDate(dateRef ? CFDateGetAbsoluteTime(dateRef) : 0, timeZoneRef);
 }
@@ -2353,8 +2402,8 @@ CFStringRef		CFStringCreateWithDate(
 	CFDateFormatterStyle	dateFormat,		//	= kCFDateFormatterShortStyle
 	CFDateFormatterStyle	timeFormat)		//	= kCFDateFormatterShortStyle
 {
-	ScCFReleaser<CFLocaleRef>			localeRef(CFLocaleCopyCurrent_Mutex());
-	ScCFReleaser<CFDateFormatterRef>	formatterRef(CFDateFormatterCreate(
+	CCFLocale				localeRef(CFLocaleCopyCurrent_Mutex());
+	CCFDateFormatter		formatterRef(CFDateFormatterCreate(
 		kCFAllocatorDefault, localeRef, dateFormat, timeFormat));
 	CFStringRef							ref(CFDateFormatterCreateStringWithDate(
 		kCFAllocatorDefault, formatterRef, dateRef));
@@ -2364,7 +2413,7 @@ CFStringRef		CFStringCreateWithDate(
 
 CFStringRef		CFStringCreateWithNumber(CFNumberRef numRef)
 {
-	ScCFReleaser<CFLocaleRef>			localeRef(CFLocaleCopyCurrent_Mutex());
+	CCFLocale				localeRef(CFLocaleCopyCurrent_Mutex());
 	ScCFReleaser<CFNumberFormatterRef>	formatterRef(CFNumberFormatterCreate(
 		kCFAllocatorDefault, localeRef, kCFNumberFormatterNoStyle));
 	CFStringRef							ref(CFNumberFormatterCreateStringWithNumber(
@@ -2833,7 +2882,7 @@ bool			CFAbsoluteTimeExpired(const CFAbsoluteTime &absTimeT)
 
 bool			CFGregorianDateExpired(const CFGregorianDate &gregTimeT)
 {
-	CCFTimeZone			timeZone(CFTimeZoneCopyDefault());
+	CCFTimeZone			timeZone(CFTimeZoneCopyCurrent_Mutex());
 	CFAbsoluteTime		absTimeT(CFGregorianDateGetAbsoluteTime(gregTimeT, timeZone));
 	
 	return CFAbsoluteTimeExpired(absTimeT) ;
@@ -2841,14 +2890,14 @@ bool			CFGregorianDateExpired(const CFGregorianDate &gregTimeT)
 
 CFGregorianDate		CFAbsoluteTimeConvertToGregorian(const CFAbsoluteTime& cfTime)
 {
-	CCFTimeZone		tz(CFTimeZoneCopyDefault());
+	CCFTimeZone		tz(CFTimeZoneCopyCurrent_Mutex());
 
 	return CFAbsoluteTimeGetGregorianDate(cfTime, tz);
 }
 
 CFAbsoluteTime		CFAbsoluteTimeCreateFromGregorian(const CFGregorianDate &greg, bool gmtB)
 {
-	CCFTimeZone		tz(gmtB ? CFTimeZoneCopyGMT() : CFTimeZoneCopyDefault());
+	CCFTimeZone		tz(gmtB ? CFTimeZoneCopyGMT() : CFTimeZoneCopyCurrent_Mutex());
 
 	return CFGregorianDateGetAbsoluteTime(greg, tz);
 }
@@ -3010,8 +3059,8 @@ CFStringRef			CFGregorianUnitsCopyString(const CFGregorianUnits& in_intervalT)
 
 CFGregorianUnits	CFTimeIntervalGetAsGregorianUnits(CFTimeInterval intervalT)
 {
-	CCFTimeZone			tz(CFTimeZoneCopyDefault());
 	CFAbsoluteTime		curT(CFAbsoluteTimeGetCurrent());
+	CCFTimeZone			tz(CFTimeZoneCopyCurrent_Mutex(curT));
 	CFAbsoluteTime		futureT(curT + intervalT);
 	CFGregorianUnits	diffUnits(CFAbsoluteTimeGetDifferenceAsGregorianUnits(futureT, curT, tz, kCFGregorianAllUnits));
 	
@@ -3111,7 +3160,7 @@ UInt16				CFTimeZoneGetCurrentYear()
 CFAbsoluteTime	CFAbsoluteTimeCreateExpiryFromMonthYear(long monthL, long yearL)
 {
 	CFAbsoluteTime			timeT;
-	CCFTimeZone				tz(CFTimeZoneCopyDefault());
+	CCFTimeZone				tz(CFTimeZoneCopyCurrent_Mutex());
 	CFGregorianDate			gregDate; structclr(gregDate);
 	CFGregorianUnits		oneMonth; structclr(oneMonth);
 	
@@ -3149,12 +3198,12 @@ void	CFAbsoluteTime_RoundUp_Day(CFAbsoluteTime *t)
 
 CFArrayRef			CFLocaleCreateMonthArray()
 {
-	CCFArray							monthArray;
-	SuperString							formatStr("LLLL"), monthStr;
-	CFGregorianDate						gregDate;	structclr(gregDate);
-	SuperString							localeLangCode(CFCopyLocaleLangKeyCode(), false);
-	ScCFReleaser<CFLocaleRef>			localeRef(CFLocaleCreate(kCFAllocatorDefault, localeLangCode.ref()));
-	ScCFReleaser<CFDateFormatterRef>	formatterRef(CFDateFormatterCreate(
+	CCFArray				monthArray;
+	SuperString				formatStr("LLLL"), monthStr;
+	CFGregorianDate			gregDate;	structclr(gregDate);
+	SuperString				localeLangCode(CFCopyLocaleLangKeyCode(), false);
+	CCFLocale				localeRef(CFLocaleCreate(kCFAllocatorDefault, localeLangCode.ref()));
+	CCFDateFormatter		formatterRef(CFDateFormatterCreate(
 		kCFAllocatorDefault, localeRef, kCFDateFormatterFullStyle, kCFDateFormatterFullStyle));
 		
 	CFDateFormatterSetFormat(formatterRef, formatStr.ref());
@@ -4981,7 +5030,7 @@ CFStringEncoding	LanguageRegionToEncoding(const SuperString& langRgn)
 		encoding = CFLangRgnStrToEncoding(langRgn);
 	#else
 	
-	ScCFReleaser<CFLocaleRef>	localeRef(CFLocaleCreate(kCFAllocatorDefault, langRgn.ref()));
+	CCFLocale					localeRef(CFLocaleCreate(kCFAllocatorDefault, langRgn.ref()));
 	SuperString					languageCodeStr((CFStringRef)CFLocaleGetValue(localeRef, kCFLocaleLanguageCode));
 	SuperString					regionCodeStr((CFStringRef)CFLocaleGetValue(localeRef, kCFLocaleCountryCode));
 	LangCode					langCode = langEnglish;

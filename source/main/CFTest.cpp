@@ -310,7 +310,7 @@ void	CFTest()
 	SuperString		resultStr;
 	
 	if (!IsDefaultEncodingSet()) {
-		SetDefaultEncoding(kAppDefaultTextEncoding);
+		SetDefaultEncoding(GetSourceTextEncodingDefault());
 	}
 	
 	CCFLog()(CFSTR("\n--------------------New CFTest Log----------------\n"));
@@ -1014,21 +1014,6 @@ void	CFTest()
 
 					CCFLog(true)(testTz);
 					CCFLog(true)(dict);
-
-					//	test getting helsinki time via GMT offset
-					if ((0)) {
-						CFAbsoluteTime		absT(CFAbsoluteTimeGetCurrent());
-						CCFTimeZone			curTz(CFTimeZoneCopyDefault());
-						bool				is_dstB(!!CFTimeZoneIsDaylightSavingTime(curTz, absT));
-						CFTimeInterval		gmt_plus_2_intervalF((2 + is_dstB) * kEventDurationHour); 
-						CCFTimeZone			gmt_plus_2Tz(
-							CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, gmt_plus_2_intervalF));
-						CCFDictionary		dict(CFTimeZoneCopyDict(gmt_plus_2Tz));
-
-						CCFLog(true)(CFSTR("----------------"));
-						CCFLog(true)(gmt_plus_2Tz);
-						CCFLog(true)(dict);
-					}
 				} else {
 					tzStr.Enquote(true);
 					tzStr.append(" doesn't exist");

@@ -573,6 +573,8 @@ OSStatus		Write_PList(
 double			CFNumberToDouble(const CFNumberRef &num);
 void			CFWaitForKeyPress(CFStringRef msgRef);
 
+bool			CFDateFormatterUses24HourTimeDiaplay();
+
 CFStringRef		CFStringCreateWithDate(
 	CFDateRef				dateRef, 
 	CFDateFormatterStyle	dateFormat = kCFDateFormatterShortStyle, 
@@ -603,6 +605,18 @@ CFStringRef		CFBundleCopyLocalizationPath();
 CFStringRef			CFCopyLocaleLangKeyCode();
 bool				CFLocaleIsEnglish();
 CFLocaleRef			CFLocaleCopyCurrent_Mutex();
+
+//	pass (0, false) if you need to test for DST
+//	passing true gives you an absolute timezone with no DST (but it works on windows)
+CFTimeZoneRef		CFTimeZoneCopyCurrent_Mutex(CFAbsoluteTime absT = 
+	#if OPT_WINOS
+		CFAbsoluteTimeGetCurrent(),
+	#else
+		0,
+	#endif
+	bool hackB = true);
+	
+void				CFLocaleResetSystem();
 
 UInt32		CFSwapInt24HostToBig(UInt32 valL);
 UInt32		CFSwapInt24BigToHost(UInt32 valL);
@@ -909,13 +923,15 @@ class	ScCFReleaser : public ScCFTypeRef<T> {
 	operator CFTypeRef()	{	return _inherited::Get();	}
 };
 
-typedef ScCFReleaser<CFURLRef>			CCFURL;
-typedef ScCFReleaser<CFTypeRef>			CCFType;
-typedef ScCFReleaser<CFDateRef>			CCFDate;
-typedef ScCFReleaser<CFErrorRef>		CCFError;
-typedef ScCFReleaser<CFStringRef>		CCFString;
-typedef ScCFReleaser<CFTimeZoneRef>		CCFTimeZone;
-typedef ScCFReleaser<CFHTTPMessageRef>	CCFHTTPMessage;
+typedef ScCFReleaser<CFURLRef>				CCFURL;
+typedef ScCFReleaser<CFTypeRef>				CCFType;
+typedef ScCFReleaser<CFDateRef>				CCFDate;
+typedef ScCFReleaser<CFErrorRef>			CCFError;
+typedef ScCFReleaser<CFLocaleRef>			CCFLocale;
+typedef ScCFReleaser<CFStringRef>			CCFString;
+typedef ScCFReleaser<CFTimeZoneRef>			CCFTimeZone;
+typedef ScCFReleaser<CFHTTPMessageRef>		CCFHTTPMessage;
+typedef ScCFReleaser<CFDateFormatterRef>	CCFDateFormatter;
 
 /***************************************************************************************/
 class	CDictionaryIterator {
@@ -1068,6 +1084,9 @@ typedef enum {
 	SS_Time_LONG_12,				//	August 29, 2008 03:36:59 PM PDT
 	SS_Time_LONG_PRETTY,			//	Thursday, March 29, 2012 - 3:31 PM PDT
 	SS_Time_LOG,					//	2009-01-24 18:20:16 or 2009-11-24 20:00:47.586 -0800, or SS_Time_JSON
+	SS_Time_SHORT_12,				//	15:23
+	SS_Time_SHORT_24,				//	3:23 PM
+	SS_Time_SHORT_J,				//	one of the two above depending on locale
 	SS_Time_COMPACT_DATE_TZ,		//	5/13/2009 PT
 	SS_Time_COMPACT_DATE_ONLY,		//	5/13/2009
 	SS_Time_COMPACT_DATE_REVERSE,	//	2012/09/01
