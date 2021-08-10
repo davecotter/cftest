@@ -3,6 +3,7 @@
 
 #include <string>
 #include <set>
+#include <vector>
 #include <cctype>
 #include "string.h"
 #include <stdarg.h>

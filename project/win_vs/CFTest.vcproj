@@ -267,7 +267,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\stdafx.h"
+				RelativePath="..\..\source\headers\stdafx.h"
 				>
 			</File>
 			<File

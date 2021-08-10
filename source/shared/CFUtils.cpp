@@ -2358,7 +2358,7 @@ bool			CFDateFormatterUses24HourTimeDiaplay()
 		s_is_24hB = !(dateStr.Contains(amStr) || dateStr.Contains(pmStr)); 
 	}
 
-	return s_is_24hB;
+	return !!s_is_24hB;
 }
 
 #define		CFReleaseClear(_ref)	\
