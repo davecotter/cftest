@@ -64,6 +64,12 @@ Boolean		QD_EmptyRect(const Rect *r)
 	return QD_RectWidth(*r) <= 0 || QD_RectHeight(*r) <= 0;
 }
 
+Rect&		QD_ClearRect(Rect *frameRP)
+{
+	QD_SetRect(frameRP, 0, 0, 0, 0);
+	return *frameRP;
+}
+
 bool	QD_EqualRect(const Rect *a, const Rect *b)
 {	
 	if (a->left != b->left) return false;
@@ -163,7 +169,7 @@ Boolean		QD_SectRect(const Rect *a, const Rect *b, Rect *out)
 	has_some_areaB = !QD_EmptyRect(out);
 	
 	if (!has_some_areaB) {
-		QD_SetRect(out,0,0,0,0);
+		QD_ClearRect(out);
 	}
 	
 	return has_some_areaB;
@@ -172,13 +178,9 @@ Boolean		QD_SectRect(const Rect *a, const Rect *b, Rect *out)
 
 // https://stackoverflow.com/questions/25068538/intersection-and-difference-of-two-rectangles
 //https://stackoverflow.com/questions/5144615/difference-xor-between-two-rectangles-as-rectangles
-
-static Rect		MakeRect(short left, short right, short top, short bottom)
+static inline Rect		MakeRect(short left, short right, short top, short bottom)
 {
-	Rect		outR;
-	
-	QD_SetRect(&outR, left, top, right, bottom);
-	return outR; 
+	return QD_GetRect(left, top, right, bottom);
 }
 
 RectVec		QD_DiffRect(const Rect& lhsR, const Rect& rhsR)
@@ -582,7 +584,7 @@ DisplayRef		GetEnclosingDevice(const Rect *theRect)
 #if OPT_KJMAC || (OPT_MACOS && _YAAF_)
 Rect			ReturnEnclosingDeviceRect(const Rect *theRectPtr)
 {
-	Rect		deviceR	= { 0, 0, 0, 0 };
+	Rect		deviceR; QD_ClearRect(&deviceR);
 
 	DisplayRef		theDevice = GetEnclosingDevice(theRectPtr);
 

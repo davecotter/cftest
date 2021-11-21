@@ -19,6 +19,7 @@
 		758EFDBD151673D800F78F3F /* CFBonjour.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 758EFDBC151673D800F78F3F /* CFBonjour.cpp */; };
 		758EFE9C15170B7100F78F3F /* CNetHTTP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 758EFE9A15170B7100F78F3F /* CNetHTTP.cpp */; };
 		75B619391AB0F0910078CC1D /* CCFError.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75B619371AB0F0910078CC1D /* CCFError.cpp */; };
+		75C779A42749BFFB0049B51B /* CFCocoa.mm in Sources */ = {isa = PBXBuildFile; fileRef = 75C779A32749BFFB0049B51B /* CFCocoa.mm */; };
 		75CFC3AB0E181B2900F15957 /* CFTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75CFC3AA0E181B2900F15957 /* CFTest.cpp */; };
 		75D277BB14BD6FF10042AAFD /* CFNetworkTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75D277B914BD6FF10042AAFD /* CFNetworkTest.cpp */; };
 		75D277BC14BD6FF10042AAFD /* CWebServerTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75D277BA14BD6FF10042AAFD /* CWebServerTest.cpp */; };
@@ -61,6 +62,8 @@
 		75B619371AB0F0910078CC1D /* CCFError.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CCFError.cpp; path = shared/CCFError.cpp; sourceTree = "<group>"; };
 		75B619381AB0F0910078CC1D /* CCFError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CCFError.h; path = shared/CCFError.h; sourceTree = "<group>"; };
 		75B6D57C1F0B25AD008F5ADB /* CFUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CFUtils.h; path = shared/CFUtils.h; sourceTree = "<group>"; };
+		75C779A22749BFFA0049B51B /* CFCocoa.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CFCocoa.h; path = shared/CFCocoa.h; sourceTree = "<group>"; };
+		75C779A32749BFFB0049B51B /* CFCocoa.mm */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = CFCocoa.mm; path = shared/CFCocoa.mm; sourceTree = "<group>"; };
 		75CFC3AA0E181B2900F15957 /* CFTest.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFTest.cpp; path = main/CFTest.cpp; sourceTree = "<group>"; };
 		75D277B914BD6FF10042AAFD /* CFNetworkTest.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CFNetworkTest.cpp; path = main/CFNetworkTest.cpp; sourceTree = "<group>"; };
 		75D277BA14BD6FF10042AAFD /* CWebServerTest.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CWebServerTest.cpp; path = main/CWebServerTest.cpp; sourceTree = "<group>"; };
@@ -128,6 +131,7 @@
 		755B02F71F128C31009C8220 /* headers */ = {
 			isa = PBXGroup;
 			children = (
+				75C779A22749BFFA0049B51B /* CFCocoa.h */,
 				7509C9771279F30000176FB1 /* stdafx.h */,
 				755B02F61F128BF1009C8220 /* CFNetworkTest.h */,
 				755B02EE1F128BE5009C8220 /* CFBonjour.h */,
@@ -153,6 +157,7 @@
 				750594230E37EB1300FECF44 /* CFUtils.cpp */,
 				7571958715201848002589A2 /* CFNetworkAddress.c */,
 				755E31460E1810450069CB0E /* SuperString.cpp */,
+				75C779A32749BFFB0049B51B /* CFCocoa.mm */,
 			);
 			name = CoreFoundation;
 			sourceTree = "<group>";
@@ -221,6 +226,7 @@
 				758EFE9C15170B7100F78F3F /* CNetHTTP.cpp in Sources */,
 				752EDDE3151A8B9600E25DBF /* CCFData.cpp in Sources */,
 				7571958815201848002589A2 /* CFNetworkAddress.c in Sources */,
+				75C779A42749BFFB0049B51B /* CFCocoa.mm in Sources */,
 				753F2BB819AF9A750054E377 /* CFTestUtils.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

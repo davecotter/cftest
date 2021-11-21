@@ -96,15 +96,15 @@
 #endif
 
 #if !defined(_JUST_CFTEST_)
-
-	void		QD_SetRect(Rect *r, short left, short top, short right, short bottom);
-
 	Rect		QD_GetRect(short left, short top, short right, short bottom);
 	Rect		QD_GetRect(const Point& topLeft, const Point& botRight);
 	Rect		QD_GetRectFromSize(const Point& widHeight);
 
+	void		QD_SetRect(Rect *r, short left, short top, short right, short bottom);
+
 	void		QD_OffsetRect(Rect *r, short x, short y);
 	void		QD_InsetRect(Rect *r, short x, short y);
+	Rect&		QD_ClearRect(Rect *frameRP);
 	Boolean		QD_EmptyRect(const Rect *r);
 	bool		QD_EqualRect(const Rect *a, const Rect *b);
 	bool		QD_EqualRectSize(const Rect& a, const Rect& b);

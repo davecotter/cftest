@@ -18,9 +18,9 @@
 #endif
 
 #if defined(_CFTEST_) || defined(rDEBUG)
-	bool	g_debugStringsB = true;
+	bool	g_debugStringsB = false;	//	change this for debugging
 #else
-	bool	g_debugStringsB = false;
+	bool	g_debugStringsB = false;	//	DO NOT CHANGE this
 #endif
 
 #ifdef _KJAMS_
@@ -225,7 +225,7 @@ void			ReportErr(const SuperString& errTypeStr, OSStatus err, bool unixB, bool p
 		}
 	#endif
 	
-	if (IsPreemptiveThread() || (gApp && gApp->i_curScopeP)) {
+	if (IsPreemptiveThread() || (gApp && gApp->GetCurScope())) {
 		postB = true;
 	}
 	
@@ -513,20 +513,23 @@ CFStringRef		CFStringCreateWithCu(
 	return CFStringCreateWithC((const char *)bufZ, encoding);
 }
 
-ustring		&CopyCFStringToUString(CFStringRef str, ustring &result, CFStringEncoding encoding, bool externalB)
+ustring&		CopyCFStringToUString(CFStringRef str, ustring &result, CFStringEncoding encoding, bool externalB)
 {
 	result.clear();
 	
 	if (str) {
-		#define						kBufSize		256
-		UTF8Char					utf8Buf[kBufSize];
 		CFRange						cfRange = CFStrGetRange(str);
 		CFIndex						resultSize;
 		CFIndex						numChars;
 		
 		encoding = ValidateEncoding(encoding);
-		result.reserve(cfRange.length * 2);	
-		
+
+#if 0
+		#define						kBufSize		256
+		UTF8Char					utf8Buf[kBufSize];
+
+		result.reserve(cfRange.length * 8);
+
 		while (cfRange.length > 0) {
 			
 			numChars = CFStringGetBytes(
@@ -540,6 +543,19 @@ ustring		&CopyCFStringToUString(CFStringRef str, ustring &result, CFStringEncodi
 			cfRange.location	+= numChars;
 			cfRange.length		-= numChars;
 		}
+#else
+		numChars = CFStringGetBytes(
+			str, cfRange, encoding, '?', externalB, 
+			NULL, 0, &resultSize);
+
+		if (numChars) {
+			result.resize(resultSize, 0);
+			
+			CFStringGetBytes(
+				str, cfRange, encoding, '?', externalB, 
+				&result[0], result.size(), &resultSize);
+		}
+#endif
 	}
 	
 	return result;
@@ -611,12 +627,12 @@ OSType		OSType_FromNumber(UInt32 valL)
 
 	str.pop_front(7);
 	str.prepend("   ");
-	return CharToOSType(str.c_str(), false);
+	return CharToOSType(str.utf8Z(), false);
 }
 
 UInt32		OSType_ToNumber(OSType osType)
 {
-	char	bufA[5];
+	OSTypeCharBuf	bufA;
 	
 	OSTypeToChar(osType, bufA);
 	return Hex_To_ULong(bufA);
@@ -650,7 +666,7 @@ SuperString		OSTypeToString(OSType osType)
 		if (osType == OSType_NONE) {
 			str.Set("-");
 		} else {
-			char	bufAC[5];
+			OSTypeCharBuf	bufAC;
 			
 			str.Set(OSTypeToChar(osType, bufAC));
 		}
@@ -1341,6 +1357,31 @@ bool	SuperString::IsJSON() const
 	return StartsWith("{") || StartsWith("[");
 }
 
+bool	SuperString::IsURL(URLProtocolType protocolType) const
+{
+	bool			is_urlB(false);
+	const char		*protocolZ = NULL;
+
+
+	switch (protocolType) {
+
+		default: {
+			CF_ASSERT(protocolType > kURLProtocol_NONE && protocolType < kURLProtocol_NUMTYPES);
+		} break;
+
+		case kURLProtocol_HTTP:	protocolZ = kCFURLProtocol_HTTP; break;
+		case kURLProtocol_FILE:	protocolZ = kCFURLProtocol_FILE; break;
+		case kURLProtocol_RAM:	protocolZ = kCFURLProtocol_RAM; break;
+	}
+
+	if (protocolZ) {
+		is_urlB = StartsWith(protocolZ);
+	}
+
+	return is_urlB;
+}
+
+
 void	SuperString::Set(const UInt8 *strZ, CFStringEncoding encoding)
 {
 	if (strZ) {
@@ -1609,8 +1650,8 @@ bool	Sort_Str_LessThan::operator()(const SuperString& str1, const SuperString& s
 	bool	lessB = CFStringLess(str1.ref(), str2.ref(), i_case_and_diacritic_sensitiveB);
 	
 	#if _HAS_PROG_
-	if (i_progB && gApp->i_curScopeP) {
-		gApp->i_curScopeP->Inc(false, false, false);
+	if (i_progB && gApp->GetCurScope()) {
+		gApp->GetCurScope()->Inc(false, false, false);
 	}
 	#endif
 
@@ -1731,20 +1772,34 @@ CMutex*		GetSprintfMutex()
 }
 #endif
 
+// --------------------------------------------------------------------------
 char *			mt_vsnprintf(const char *formatZ, va_list &args)
 {
 	#ifdef _H_CThreads
-		char		*g_sprintfBuf(CThreads::GetSprintfBuf());
+		char			*g_sprintfBuf(CThreads::GetSprintfBuf());
 	#else
 		#define			kSprintfBufSize		(64 * kKiloByte)
 		static char		g_sprintfBuf[kSprintfBufSize];
 	#endif
 
-	vsnprintf(g_sprintfBuf, kSprintfBufSize - 1, formatZ, args);
+	my_vsnprintf(g_sprintfBuf, kSprintfBufSize - 1, formatZ, args);
+
 	g_sprintfBuf[kSprintfBufSize - 1] = 0;
 	
 	return g_sprintfBuf;
 }
+
+SuperString&		SuperString::append(double valueF, short precS)
+{
+	SuperString		formatStr, numStr;
+	
+	formatStr.ssprintf("%%.%dlf", (int)precS);
+	numStr.ssprintf(formatStr.utf8Z(), valueF);
+	Set(utf8() + numStr.utf8());
+	return *this; 
+}
+
+// --------------------------------------------------------------------------
 
 void	SuperString::Update_utf32() const
 {
@@ -1756,10 +1811,11 @@ void	SuperString::Update_utf32() const
 		
 		CopyCFStringToUString(i_ref, str, kCFStringEncodingUTF32LE);
 
-		size_t			sizeL(str.size() >> 2);
+		size_t			bytesL(str.size());
+		size_t			sizeL(bytesL >> 2);
 		UTF32Char		*utf32A((UTF32Char *)str.c_str());
 		UTF32Char		*beginZ(&utf32A[0]);
-		UTF32Char		*endZ(&utf32A[sizeL]);
+		UTF32Char		*endZ(beginZ + sizeL);
 		
 		i_utf32->assign(beginZ, endZ);
 	}
@@ -2118,10 +2174,10 @@ Ptr				SuperString::GetAs_Ptr() const
 
 void				SuperString::Set(SInt64 valueL)
 {
-	char	bufAC[32];
+	SuperString		numStr;
 	
-	::sprintf(bufAC, "%lld", valueL);
-	Set(uc(bufAC));
+	numStr.ssprintf("%lld", valueL);
+	Set(numStr);
 }
 
 SInt64				SuperString::GetAs_SInt64() const
@@ -2134,10 +2190,10 @@ SInt64				SuperString::GetAs_SInt64() const
 
 void			SuperString::Set(UInt64 valueL)
 {
-	char	bufAC[32];
+	SuperString		numStr;
 	
-	::sprintf(bufAC, "%llu", valueL);
-	Set(uc(bufAC));
+	numStr.ssprintf("%llu", valueL);
+	Set(numStr);
 }
 
 UInt64			SuperString::GetAs_UInt64() const
@@ -2362,6 +2418,7 @@ SuperString&				SuperString::Set(
 {
 	CCFDateFormatter	formatterRef;
 	CCFTimeZone			localTz;
+	bool				needs_time_zoneB(true);
 	
 	if (timeZoneRef) {
 		localTz.SetAndRetain(timeZoneRef);
@@ -2434,6 +2491,7 @@ SuperString&				SuperString::Set(
 
 		case SS_Time_JSON: {
 			formatterRef.adopt(CFDateFormatterCreate_JSON());
+			needs_time_zoneB = false;
 		} break;
 
 		default: {
@@ -2485,15 +2543,18 @@ SuperString&				SuperString::Set(
 		} break;
 	}
 
-	if (localTz.ref() == NULL) {
-		localTz.adopt(CFTimeZoneCopyCurrent_Mutex(absT));
+	if (needs_time_zoneB) {
+	
+		if (localTz.ref() == NULL) {
+			localTz.adopt(CFTimeZoneCopyCurrent_Mutex(absT));
 
+		}
+		
+		CF_ASSERT(formatterRef.ref());
+		
+		CFDateFormatterSetProperty(
+			formatterRef, kCFDateFormatterTimeZone, localTz.ref());
 	}
-	
-	CF_ASSERT(formatterRef.ref());
-	
-	CFDateFormatterSetProperty(
-		formatterRef, kCFDateFormatterTimeZone, localTz.ref());
 
 	Set(CFDateFormatterCreateStringWithAbsoluteTime(
 		kCFAllocatorDefault, formatterRef, absT), false);
@@ -2628,11 +2689,17 @@ SuperString&	SuperString::ssprintf(const char *formatZ0, ...)
 	va_start(args, formatZ0);
 
 	if (formatStr.Contains("%@") || formatStr.Contains("$@")) {
-		CFDictionaryRef		optionsDict = NULL;
-
 		CF_ASSERT(!formatStr.Contains("%s"));
 		CF_ASSERT(!formatStr.Contains("$s"));
-		
+
+		#if OPT_WINOS && _YAAF_
+			CCFDictionary		optionsDict;
+
+			optionsDict.SetValue_Ref(kCFStringPrintfEncoding, (SInt32)kCFStringEncodingUTF8);
+		#else
+			CFDictionaryRef		optionsDict = NULL;
+		#endif
+
 		Set(CFStringCreateWithFormatAndArguments(
 			kCFAllocatorDefault, 
 			optionsDict,
@@ -2863,15 +2930,6 @@ SuperString		SuperString::GetBestPrettyDate(
 	return dateStr;
 }
 #endif
-
-char *			CopyDoubleToC(double valF, char *bufZ, short precisionS)
-{
-	char	formatAC[32];
-	
-	sprintf(formatAC, "%%.%dlf", (int)precisionS);
-	sprintf(bufZ, formatAC, valF);
-	return bufZ;
-}
 
 SuperString&	SuperString::InsertAt(size_t posL, const SuperString& str, bool from_endB)
 {
@@ -3188,12 +3246,13 @@ SuperString&		SuperString::trim()
 
 SuperString&		SuperString::Smarten()
 {
-	UTF32Vec	charVec;	charVec.assign(utf32().begin(), utf32().end());
-	bool		openB = true;
-	UTF32Char	openCh(0x201C);
-	UTF32Char	closeCh(0x201D);
-	UTF32Char	open1Ch(0x2018);
-	UTF32Char	close1Ch(0x2019);
+	const ww_string&	wwStr(utf32());
+	UTF32Vec			charVec;	charVec.assign(wwStr.begin(), wwStr.end());
+	bool				openB = true;
+	UTF32Char			openCh(0x201C);
+	UTF32Char			closeCh(0x201D);
+	UTF32Char			open1Ch(0x2018);
+	UTF32Char			close1Ch(0x2019);
 
 	for (UTF32Vec::iterator it(charVec.begin()); it != charVec.end(); ++it) {
 		UTF32Char&	ch(*it);

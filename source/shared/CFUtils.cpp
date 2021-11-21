@@ -8,6 +8,7 @@
  */
 #include "stdafx.h"
 #include "CFStackTrace.h"
+#include "CFCocoa.h"
 #include "MinMax.h"
 #include <iostream>
 
@@ -211,8 +212,15 @@ void	FilterErr(OSStatus err, bool from_exceptionB)
 	#endif
 }
 
+// =====================================================================
 // static
 CFStringRef		CCFLog::i_logPathRef = NULL;
+
+
+CCFLog::CCFLog(bool crB) : i_crB(crB)
+{
+}
+
 //static
 void		CCFLog::SetLogPath(CFStringRef logPathRef)
 {
@@ -322,7 +330,7 @@ void	CCFLog::trim()
 		#if kUseCFLogger
 		#if OPT_WINOS
 		{
-			CDlogScopeProgress		sc(SSLocalize("Trimming Log files…", ""), true);
+			CDlogScopeProgress		sc("CCFLog::trim", SSLocalize("Trimming Log files…", ""), true);
 			CFileRef				folderRef(CFileRef::kFolder_LOGS);
 			FSRefVec				refVec;
 			SuperString				elipsisStr("…");
@@ -480,6 +488,10 @@ void CCFLog::operator()(CFTypeRef valRef)
 {
 	if (!CFGetLogging()) return;
 
+	#if defined(_KJAMS_) && !defined(_MIN_CF_)
+	CCritical				sc(LogMutex());	//	GetSprintfMutex() same thing
+	#endif
+
 	static SuperString		s_safe_percentStr;
 	SuperString				valStr;	valStr.Set_CFType(valRef);
 	FILE					*log_fileP = GetOrCreateLogFile();
@@ -571,9 +583,17 @@ CFXMLTreeRef	CCFXMLTreeCreateFromData(
 
 CFDataRef		CCFPropertyListCreateXMLData(
 	CFPropertyListRef	plist, 
-	CFErrorRef			*)
+	CFErrorRef			*errRef)
 {
-	return CFPropertyListCreateXMLData(kCFAllocatorDefault, plist);
+	#if OPT_MACOS
+		return CFPropertyListCreateData(
+			kCFAllocatorDefault, plist,
+			kCFPropertyListXMLFormat_v1_0,
+			0, errRef);
+	#else
+		//	only because i think the above API isn't available in CFLite?
+		return CFPropertyListCreateXMLData(kCFAllocatorDefault, plist);
+	#endif
 }
 
 #endif	//	!OPT_KJMAC
@@ -1357,6 +1377,7 @@ void				CCFDictionary::SetValue			(const char *utf8Z, double valF)
 }
 
 /*****************************************/
+#if !defined(_HELPERTOOL_)
 RGBColor			CCFDictionary::GetAs_Color		(const char *utf8Z)
 {
 	RGBColor			valR		= { 0, 0, 0 };
@@ -1381,6 +1402,8 @@ void				CCFDictionary::SetValue(const char *utf8Z, const RGBColor& value)
 	
 	SetValue(utf8Z, dict.Get());
 }
+#endif
+
 /*****************************************/
 
 void				CCFDictionary::TransferValue(OSType osType, CCFDictionary& other)
@@ -1549,9 +1572,14 @@ void				CCFDictionary::SetValue(const char *utf8Z, const char *utf8ValZ)
 	SetValue(utf8Z, SuperString(uc(utf8ValZ)).ref());
 }
 
-SuperString		CCFDictionary::GetXML() const {
+SuperString		CCFDictionary::GetXML() const
+{
 	CCFData			cfData(Get());
-	SuperString		xmlStr; xmlStr.Set(cfData.Get());
+	SuperString		xmlStr;
+
+	if (cfData.Get()) {
+		xmlStr.Set(cfData.Get());
+	}
 	
 	return xmlStr;
 }
@@ -1664,7 +1692,18 @@ class ForEach_CopyToJSON {
 
 					valueStr.append(valF, 2);
 				} break;
-				
+
+				case CFType_RANGE: {
+					CFRange			cfRange(CFTypeGetRange(valRef));
+
+					valueStr.append("{");
+					valueStr.append((long)cfRange.location);
+					valueStr.append(", ");
+					valueStr.append((long)cfRange.length);
+					valueStr.append("}");
+					valueStr.Enquote();
+				} break;
+
 				case CFType_NUMBER_INT: {
 					long			valL = CFNumberToLong((CFNumberRef)valRef);
 					
@@ -2663,15 +2702,9 @@ void		Log(const SuperString& str, bool crB)
 void		Log(const char *utf8Z, bool crB)
 {
 	if (CFGetLogging()) {
-		#if defined(_KJAMS_) && !defined(_MIN_CF_)
-			CCritical		sc(LogMutex());	//	GetSprintfMutex() same thing
-		#endif
+		CCFLog		Logger(crB);
 
-		{
-			CCFLog			logger(crB);
-
-			logger(SuperString(uc(utf8Z)).ref());
-		}
+		Logger(SuperString(uc(utf8Z)).ref());
 	}
 }
 
@@ -2867,9 +2900,17 @@ CFStringRef		CFCopyLocaleLangKeyCode()
 
 bool			CFLocaleIsEnglish()
 {
-	SuperString		localeCode(CFCopyLocaleLangKeyCode(), false);
-	
-	return localeCode == "en";
+	static bool			s_is_english_inittedB = false;
+	static bool			s_is_englishB = false;
+
+	if (!s_is_english_inittedB) {
+		SuperString		localeCode(CFCopyLocaleLangKeyCode(), false);
+		
+		s_is_englishB = localeCode.StartsWith("en");
+		s_is_english_inittedB = true;
+	}
+
+	return s_is_englishB;
 }
 
 bool			CFAbsoluteTimeExpired(const CFAbsoluteTime &absTimeT)
@@ -3247,6 +3288,11 @@ CFTypeID		CFTypeGetID(CFTypeEnum typeEnum)
 			break;
 		}
 
+		case CFType_RANGE: {
+			typeID = CFRangeGetTypeID();
+			break;
+		}
+
 		case CFType_NUMBER_INT:
 		case CFType_NUMBER_FLOAT: {
 			typeID = CFNumberGetTypeID();
@@ -3516,7 +3562,7 @@ void	CFReportUnitTest(const char *utf8Z, OSStatus err)
 	str.Set(
 		err
 			? uc("FAIL: ")
-			: uc("PASS: "));
+			: uc("pass: "));
 	
 	if (err) {
 		str.append("(");
@@ -3553,11 +3599,6 @@ void	CFSleep(CFTimeInterval durationT)
 }
 
 /*******************************/
-bool		IsRamURL(const SuperString& str)
-{
-	return str.StartsWith(kCFURLProtocol_RAM);
-}
-
 CFDataRef	RamURL_GetEssence(const SuperString& str)
 {
 	SuperString			dictMemAddr(str);
@@ -4144,7 +4185,7 @@ bool			Dict_Get_Str(CFDictionaryRef dict, const char *keyZ, SuperString *strP)
 
 void	Dict_Set_OSType(CFMutableDictionaryRef dict, const char *keyZ, OSType osType)
 {
-	char	nameAC[5];
+	OSTypeCharBuf	nameAC;
 	
 	OSTypeToChar(osType, nameAC);
 	Dict_Set_Str(dict, keyZ, nameAC);
@@ -5141,3 +5182,32 @@ CFTimeInterval						CFMillisecondsToSeconds(CFTimeIntervalMilliseconds milliI)
 {
 	return static_cast<CFTimeInterval>(milliI) / static_cast<CFTimeInterval>(kDurationSecond);
 }
+
+#if OPT_WINOS
+CFTypeID	CFRangeGetTypeID()
+{
+	CF_ASSERT(0);
+	return 0;
+}
+
+CFRange		CFTypeGetRange(CFTypeRef typeRef)
+{
+	CFRange		cfRange;
+
+	structclr(cfRange);
+	CF_ASSERT(0);
+	return cfRange;
+}
+
+CFTypeRef	CFRangeCreate(const CFRange& cfRange)
+{
+	CF_ASSERT(0);
+	return NULL;
+}
+
+CFTypeRef	CFRangeCreate(CFIndex loc, CFIndex len)
+{
+	CF_ASSERT(0);
+	return NULL;
+}
+#endif

@@ -251,6 +251,10 @@
 			Name="headers"
 			>
 			<File
+				RelativePath="..\..\source\shared\CFCocoa.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\main\CFNetworkTest.h"
 				>
 			</File>

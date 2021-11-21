@@ -64,8 +64,6 @@ void			SetLastErrorStr(const SuperString& str);
 SuperString		GetLastErrorStr();
 
 /****************************************************************/
-
-char *			CopyDoubleToC(double valF, char *bufZ, short precisionS = 2);
 double			CStringToDouble(const char *numF);
 char*			strrstr(const char* stringZ, const char* findZ);
 const char *	CopyLongToC(long valL);
@@ -122,6 +120,7 @@ bool			OSType_IsStringNumber(OSType osType);
 OSType			OSType_FromNumber(UInt32 valL);
 UInt32			OSType_ToNumber(OSType osType);
 
+typedef char	OSTypeCharBuf[8];
 char			*OSTypeToChar(OSType osType, char *bufZ);
 SuperString		OSTypeToString(OSType osType);
 
@@ -288,6 +287,16 @@ class	UniString {
 		delete i_charVecP;
 	}
 };
+
+typedef enum {
+	kURLProtocol_NONE,
+
+	kURLProtocol_HTTP,
+	kURLProtocol_FILE,
+	kURLProtocol_RAM,
+
+	kURLProtocol_NUMTYPES
+} URLProtocolType;
 
 typedef std::vector<UTF32Char>		UTF32Vec;
 typedef std::basic_string<UTF32Char, std::char_traits<UTF32Char>, std::allocator<UTF32Char> > ww_string;
@@ -482,6 +491,8 @@ public:
 	void	UnEscapeJSON();
 	void	EscapeJSON();
 	
+	bool	IsURL(URLProtocolType protocolType) const;
+
 	bool			GetUnicodeHexStr(SuperString *foundStrP);
 	SuperString		UnicodeHexToStr();
 
@@ -970,10 +981,10 @@ public:
 	
 	SuperString		&append(long valueL)
 	{
-		char	bufAC[32];
+		SuperString		numStr;
 		
-		::sprintf(bufAC, "%ld", valueL);
-		return append(uc(bufAC));
+		numStr.ssprintf("%ld", valueL);
+		return append(numStr);
 	}
 	
 	SuperString		&UnEscapeAmpersands();
@@ -991,13 +1002,7 @@ public:
 		return *this;
 	}
 	
-	SuperString		&append(double valueF, short precS = 1)
-	{
-		char	bufAC[32];
-		
-		CopyDoubleToC(valueF, bufAC, precS);
-		return append(bufAC);
-	}
+	SuperString&	append(double valueF, short precS = 1);
 	
 	/****************************/
 	SuperString		&prepend(const ustring &other) {
@@ -1014,10 +1019,10 @@ public:
 	}
 	
 	SuperString		&prepend(long valueL) {
-		char	bufAC[32];
+		SuperString		numStr;
 		
-		::sprintf(bufAC, "%.2ld", valueL);
-		return prepend(bufAC);
+		numStr.ssprintf("%.2ld", valueL);
+		return prepend(numStr);
 	}
 	
 	//	allows alpha, numeric, and "period"

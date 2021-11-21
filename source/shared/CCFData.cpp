@@ -53,11 +53,21 @@ OSStatus	CCFData::Download_Resource(
 void	CCFData::Set(CFDictionaryRef dict, CFDictionaryRef *errorDictP0)
 {
 	CCFError	cfErr;
+
+	adopt(CCFPropertyListCreateXMLData(dict, cfErr.AddressOf()));
 	
-	adopt(CCFPropertyListCreateXMLData(dict, errorDictP0 ? cfErr.AddressOf() : NULL));
-	
-	if (errorDictP0 && cfErr.Get()) {
-		*errorDictP0 = CFErrorCopyAsDict(cfErr);
+	if (cfErr.Get()) {
+
+		if (errorDictP0) {
+			*errorDictP0 = CFErrorCopyAsDict(cfErr);
+
+		} else {
+			#ifdef kDEBUG
+			CCFDictionary		errDict(CFErrorCopyAsDict(cfErr));
+
+			CCFLog(true)(errDict);
+			#endif
+		}
 	}
 }
 

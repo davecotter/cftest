@@ -41,9 +41,17 @@
 	#else
 		#define _QT6_	0
 	#endif
-
 #endif
 
+#if OPT_WINOS
+	#define my_vsnprintf	::_vsprintf_p
+#else
+	#define my_vsnprintf	::vsnprintf
+#endif
+
+#ifdef _HELPERTOOL_
+    #include <CoreServices/CoreServices.h>
+#endif
 
 /******************************************************************************/
 #define		LERP(to_min, to_max, from, from_min, from_max)	\
@@ -98,6 +106,7 @@ enum {
 	fsDataTooBigErr               = -1310, /*file or volume is too big for system*/
 	kBadArgLengthErr              = -9063, /* ArgLength argument is invalid*/
 	notEnoughDataErr              = -2149,
+
 //	duped in BasicTypes.h ??? factor
 /*
 	ioErr                         = -36,  //I/O error (bummers)
@@ -262,6 +271,9 @@ namespace std {
 	enum CFNetworkErrors {
 		kCFHostErrorUnknown					= 2,		 // Query the kCFGetAddrInfoFailureKey to get the value returned from getaddrinfo; lookup in netdb.h
 		kCFURLErrorNetworkConnectionLost	= -1005,
+		kCFURLErrorSecureConnectionFailed	= -1200,
+		errSSLProtocol                                  = -9800,    /* SSL protocol error */
+		errSSLPeerInternalError                         = -9838,    /* internal error */
 		kCFErrorHTTPBadURL					= 305,
 	};
 	#endif
@@ -533,7 +545,8 @@ typedef enum {
 	CFType_DATA,
 	CFType_HTTP_MESSAGE,
 	CFType_CFURL,
-	
+	CFType_RANGE,
+
 	CFType_UNKNOWN
 } CFTypeEnum;
 
@@ -595,8 +608,10 @@ CFStringRef		CFCopyBundleResourcesFSPath();
 void			CFLogSetLogPath();
 long			CFNumberToLong(const CFNumberRef &num);
 
+#if !defined(_HELPERTOOL_)
 CFDateRef 		CFDateCreateWithLongDateTime(const LongDateTime &ldt);
 LongDateTime	CFDateToLongDateTime(CFDateRef dateRef);
+#endif
 
 bool			CFDebuggerAttached();
 void			CFDebugBreak();
@@ -760,11 +775,13 @@ CFDateRef		Dict_Copy_Date(CFDictionaryRef dict, const char *keyZ);
 void	Dict_Set_Rect(CFMutableDictionaryRef dict, const char *keyZ, const Rect &valR);
 Rect	Dict_Get_Rect(CFDictionaryRef dict, const char *keyZ);
 
+#if !defined(_HELPERTOOL_)
 RGBColor	Dict_Get_Color(CFDictionaryRef dict, const char *keyZ);
 void		Dict_Set_Color(CFMutableDictionaryRef dict, const char *keyZ, const RGBColor &valR);
 
 void		Array_Append_ColorSpec(CFMutableArrayRef array, const ColorSpec &cspec);
 ColorSpec	Array_GetInd_ColorSpec(CFArrayRef array, CFIndex indexL);
+#endif
 
 void		SplitOffExtension(std::string &str, std::string *extenstionP0 = NULL);
 
@@ -785,12 +802,14 @@ bool	CFGetLogDuringStartup();
 
 void	CFSetLogging(bool logB);
 
+class CCritical;
+
 class CCFLog {
-	bool	i_crB;
-	static	CFStringRef		i_logPathRef;
+	bool					i_crB;
+	static CFStringRef		i_logPathRef;
 	
 	public:
-	CCFLog(bool crB = false) : i_crB(crB) { }
+	CCFLog(bool crB = false);
 	
 	static	void		SetLogPath(CFStringRef logPathRef);
 	static	CFStringRef	GetLogPath()	{ return i_logPathRef; }
@@ -798,7 +817,6 @@ class CCFLog {
 	static	void		trim();
 
 	void operator()(CFTypeRef valRef);
-	//inline void operator()(void const* valRef)	{	operator()((CFTypeRef)valRef);	}
 	void operator()(CFStringRef keyRef, CFTypeRef valRef);
 };
 
@@ -1265,8 +1283,11 @@ class CCFDictionary : public ScCFReleaser<CFMutableDictionaryRef> {
 	CFAbsoluteTime		GetAs_AbsTime	(CFStringRef keyStr);
 	CFAbsoluteTime		GetAs_AbsTime	(const char *utf8Z);
 	CFGregorianDate		GetAs_GregDate	(const char *utf8Z);
-	RGBColor			GetAs_Color		(const char *utf8Z);
 	Ptr					GetAs_Ptr		(const char *utf8Z);
+
+#if !defined(_HELPERTOOL_)
+	RGBColor			GetAs_Color		(const char *utf8Z);
+#endif
 	
 	template <typename T>
 	T					GetAs_PtrT(const char *utf8Z)
@@ -1320,8 +1341,11 @@ class CCFDictionary : public ScCFReleaser<CFMutableDictionaryRef> {
 	void				SetValue_AbsTime(CFStringRef keyStr, CFAbsoluteTime valueT);
 	void				SetValue_AbsTime(const char *utf8Z, CFAbsoluteTime valueT);
 	void				SetValue(const char *utf8Z, const SuperString& value);
-	void				SetValue(const char *utf8Z, const RGBColor& value);
 	void				SetValue(const char *utf8Z, Ptr valueP);
+
+#if !defined(_HELPERTOOL_)
+	void				SetValue(const char *utf8Z, const RGBColor& value);
+#endif
 
 /*	void				SetValue(OSType osType, const SuperString& value) {
 		SetValue(osType, value.ref());
@@ -1742,7 +1766,6 @@ class ScNoBreakFNF {
 SuperString		GetUserName();
 SuperString		GetConsoleFilePath();
 
-bool		IsRamURL(const SuperString& str);
 CFDataRef	RamURL_GetEssence(const SuperString& str);
 
 bool		IsLocalURL(const SuperString& str);

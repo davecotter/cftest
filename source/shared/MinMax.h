@@ -15,8 +15,9 @@
 
 #define math_ceil(_foo) 	ceil(_foo)
 
+#ifdef __cplusplus
 int		math_gcd(int a, int b);
 void	math_reduce(int& x, int& y);
-
+#endif
 
 #endif	//	_H_MinMax

@@ -9,30 +9,30 @@
 #include "CCFData.h"
 #include "CFTest.h"
 
-#define			kTest_ExtraLogging					1
+#define			kTest_ExtraLogging					0
 
 //---------------------------------------------------------------------------------------------------------
 //	test all of these, all must succeed
-#if 1
+#if 0
 	#define		kTest_BitDepthAndPtrSize			0
 	#define		kTest_CFTicks						0
 	#define		kTest_StringCompare					0
-	#define		kTest_EncodingConversion			0
+	#define		kTest_EncodingConversion			1
 	#define		kTest_Locale						0
 	#define		kTest_LocToEncoding					0
 	#define		kTest_DateTime						0
-	#define		kTest_TimeZone						1
-	#define		kTest_Sprintf						0
+	#define		kTest_TimeZone						0
+	#define		kTest_Sprintf						1
 	#define		kTest_Bundle						0
 #else
 	#define		kTest_BitDepthAndPtrSize			1
-	#define		kTest_CFTicks						1
+	#define		kTest_CFTicks						0
 	#define		kTest_StringCompare					1
 	#define		kTest_EncodingConversion			1
 	#define		kTest_Locale						1
 	#define		kTest_LocToEncoding					1
 	#define		kTest_DateTime						1
-	#define		kTest_TimeZone						1
+	#define		kTest_TimeZone						0
 	#define		kTest_Sprintf						1
 	#define		kTest_Bundle						1
 #endif
@@ -658,7 +658,7 @@ void	CFTest()
 			const SuperString&	correct_localIdStr(it->second);
 			
 			SuperString			localIdStr(CFLocaleCreateCanonicalLanguageIdentifierFromString(kCFAllocatorDefault, langStr.ref()),	false);
-			SuperString			formatStr("Convert Locale to Lang ID: “%s”", kCFStringEncodingUTF8);
+			SuperString			formatStr("Convert Locale to Lang ID: “%s”");
 			
 			formatStr.ssprintf(NULL, langStr.utf8Z());
 			

@@ -22,23 +22,8 @@ DEFINES += _MIN_CF_
 DEFINES += _JUST_CFTEST_
 CONFIG += c++11
 
-greaterThan(QT_MAJOR_VERSION, 5) {
-	DEFINES += _QT6_=1
-	_QT6_ = 1
-
-	# later you can do this:
-	#	equals(_QT6_, 1) {
-	#		do something here
-	#	}
-
-	win32 {
-		CONFIG += no_utf8_source
-		QMAKE_CXXFLAGS += /source-charset:.10000	# macroman code page
-	}
-} else {
-	DEFINES += _QT6_=0
-	_QT6_ = 0
-}
+DEFINES += _QT6_=1
+_QT6_ = 1
 
 macx {
 	DEFINES += OPT_MACOS=1
@@ -55,7 +40,7 @@ macx {
 	ssl_edition = libressl
 
 	CONFIG += no_utf8_source
-	QMAKE_CXXFLAGS += /source-charset:.10000
+	#QMAKE_CXXFLAGS += /source-charset:.10000	# macroman code page
 }
 
 contains(QMAKE_TARGET.arch, x86_64) {
@@ -100,7 +85,6 @@ INCLUDEPATH		+= $${DIR_SOURCE}headers
 STD_AFX			= $${DIR_SOURCE}headers/stdafx.h
 
 HEADERS			+= $${STD_AFX}
-PRECOMPILED_HEADER = $${STD_AFX}
 
 macx {
 	FRAMEWORKS_DIR	= /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
@@ -111,8 +95,11 @@ macx {
 
 	#INCLUDEPATH += $${FRAMEWORKS_DIR}	//	automatic due to QMAKE_LFLAGS 
 	
+	QMAKE_OBJECTIVE_CFLAGS += -fobjc-arc
+
 	LIBS += -framework CoreServices
 	LIBS += -framework CoreFoundation
+	LIBS += -framework Foundation
 	LIBS += -framework ApplicationServices
 
 	# QMAKE_MAC_SDK = macosx10.13
@@ -121,7 +108,8 @@ macx {
 	QMAKE_CXXFLAGS_WARN_ON += -Wall -Wno-unused-parameter -Wno-invalid-source-encoding
 
 	SOURCES += \
-		$${DIR_CFNET}NetServices/CFNetworkAddress.c
+		$${DIR_CFNET}NetServices/CFNetworkAddress.c \
+		$${DIR_SOURCE}shared/CFCocoa.mm
 
 	HEADERS += \
 		$${DIR_CFNET_INC}CFNetwork/CFNetworkAddress.h
@@ -202,7 +190,8 @@ HEADERS += \
     $${DIR_SOURCE}shared/CFUtils.h \
     $${DIR_SOURCE}shared/CNetHTTP.h \
     $${DIR_SOURCE}shared/QDUtils.h \
-    $${DIR_SOURCE}shared/SuperString.h \
+	$${DIR_SOURCE}shared/SuperString.h \
+	$${DIR_SOURCE}shared/CFCocoa.h \
 	$${DIR_SOURCE}main/CFNetworkTest.h \
 	$${DIR_SOURCE}main/CFTest.h \
 	$${DIR_SOURCE}main/CFTestUtils.h \

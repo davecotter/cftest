@@ -39,6 +39,7 @@
 #define kCFURLStatusCode_FORBIDDEN				403
 #define kCFURLStatusCode_NOT_FOUND				404
 #define kCFURLStatusCode_REQUEST_TOO_LARGE		413
+#define kCFURLStatusCode_SSL_CERT_ERR			495	//	SSL Certificate Error
 #define kCFURLStatusCode_ERR_ALREADY_SET		500	//	actually "internal server error"
 #define kCFURLStatusCode_ERR_UNKNOWN			506
 #define kCFURLStatusCode_ERR_UNKNOWN2			507

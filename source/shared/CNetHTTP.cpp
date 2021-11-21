@@ -418,10 +418,22 @@ void		CNetHTTP::CB_CNetHTTP_ReadStream(CFReadStreamRef incomingStreamRef, CFStre
 				
 				if (streamErr && i_statusCode == kCFURLStatusCode_NONE) {
 
+					if (
+						   streamErr == errSSLPeerInternalError	//	mac
+						|| streamErr == errSSLProtocol			//	windows
+					) {
+						streamErr = kCFURLErrorSecureConnectionFailed;
+						i_statusCode = kCFURLStatusCode_SSL_CERT_ERR;
+					} else {
+						i_statusCode = kCFURLStatusCode_ERR_ALREADY_SET;
+					}
+
+					i_terminateErr.Set(streamErr);
+
 					if (IsLogging()) {
 						CCFLog(true)(CFSTR("strange http error"));
 						CCFLog(true)(errDict.ref());
-						
+
 						if (streamErr == kCFHostErrorUnknown) {
 							OSStatus			addrErr(errDict.GetAs_SInt32(SuperString(kCFStreamErrorCodeKey).utf8Z()));
 							
@@ -435,9 +447,6 @@ void		CNetHTTP::CB_CNetHTTP_ReadStream(CFReadStreamRef incomingStreamRef, CFStre
 							}
 						}
 					}
-					
-					i_statusCode = kCFURLStatusCode_ERR_ALREADY_SET;
-					i_terminateErr.Set(streamErr);
 				}
 			}
 
@@ -605,14 +614,16 @@ void	CNetHTTP::ReportErrors()
 
 				case kCFErrorHTTPBadURL:
 				case kNSpHostFailedErr:
-				case notEnoughDataErr: {
+				case notEnoughDataErr:
+				case kCFURLErrorSecureConnectionFailed:
+				{
 					#if !_PaddleServer_ && !_JUST_CFTEST_
 						errStr = MacErrToStr(i_terminateErr.Get());
 					#endif
 				} break;
 			}
 			
-			//	here we ONLY report on the above 3 types of errors
+			//	here we ONLY report on the above types of errors
 			//	other errors are handled / reported elsewhere
 
 			if (!errStr.empty()) {
@@ -700,7 +711,12 @@ void 	CNetHTTP::Completion(CFStreamEventType eventType)
 					i_terminateErr.Set(kNSpHostFailedErr);
 					break;
 				}
-					
+
+				case kCFURLStatusCode_SSL_CERT_ERR: {
+					i_terminateErr.Set(kCFURLErrorSecureConnectionFailed);
+					break;
+				}
+
 				case kCFURLStatusCode_NOT_FOUND: {
 					i_terminateErr.Set(kNSpHostFailedErr);
 					break;
@@ -1682,7 +1698,7 @@ CFURLRef		CDownloadToFolder::GetDownloadedFile()
 	CFileRef		cFile(destFold);
 	
 	cFile.Descend(destFile);
-	return cFile.CopyURL();
+	return cFile.CopyAs_CFURL();
 }
 
 void	CDownloadToFolder::completion(OSStatus err, CNetHTTP *netP)
@@ -1762,7 +1778,7 @@ OSStatus		DownloadTest()
 	#if 1
 		new CDownloadToFolder(
 			"https://karaoke.kjams.com/downloads/Python_Installer.msi", 
-			tempFolder.CopyURL(),
+			tempFolder.CopyAs_CFURL(),
 			true);
 	#else
 		CNetHTTP		*netP = new CNetHTTP();
