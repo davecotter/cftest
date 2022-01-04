@@ -185,17 +185,18 @@ static const CFIndex kCFIndexEnd	= -2;
 #define		kMacOS_10_13			0x101300		//	HighSierra	
 #define		kMacOS_10_14			0x101400		//	Mojave
 #define		kMacOS_10_15			0x101500		//	Catalina
-#define		kMacOS_11_0				0x110000		//	Big Sur
-#define		kMacOS_11_1				0x110100		//	Monterey
-#define		kMacOS_11_2				0x110200		//	?
+#define		kMacOS_11				0x110000		//	Big Sur
+#define		kMacOS_12				0x120000		//	Monterey
+#define		kMacOS_13				0x130000		//	?
 
-#define		kMacOS_Current			kMacOS_11_0		//	currently released
-#define		kMacOS_Next				kMacOS_11_1		//	not released yet
+#define		kMacOS_Current			kMacOS_12_0		//	currently released
+#define		kMacOS_Next				kMacOS_13_0		//	not released yet
 
 class SuperString;
 
 typedef SInt32	SystemVersType;
-SystemVersType	GetSystemVers(void);
+SystemVersType	GetSystemVers();
+UInt8			GetSystemVersComponents(UInt16 *out_majorP, UInt8 *out_minorP, SystemVersType sysVers = 0);
 SuperString		GetSystemVersStr(SystemVersType type);
 
 #define		FourCharQuestionMarks	0x3F3F3F3F	//	'????'

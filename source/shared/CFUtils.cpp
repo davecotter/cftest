@@ -3442,6 +3442,16 @@ CFIndex		S_LogCount(CFTypeRef typeRef, const char *utf8Z, bool forceB)
 	return countL;
 }
 
+static SystemVersType bcdToDec(SystemVersType hex)
+{
+	CF_ASSERT(((hex & 0xF0) >> 4) < 10);  // More significant nybble is valid
+	CF_ASSERT((hex & 0x0F) < 10);         // Less significant nybble is valid
+
+	int	dec = ((hex & 0xF0) >> 4) * 10 + (hex & 0x0F);
+
+	return dec;
+}
+
 #if OPT_MACOS
 static SystemVersType decToBcd(SystemVersType val)
 {
@@ -3472,6 +3482,10 @@ static		bool	MergeSystemVersByte(OSType selector, int shiftI, SystemVersType& io
 	return failB;
 }
 
+//	vers bytes are 0xAAAAIIDD
+//	A = mAjor
+//	I = mInor
+//	D = Dot
 static SystemVersType	GenerateSystemVersionStatic()
 {
 	SystemVersType		sysVers		= kMacOS_10_9;
@@ -3516,39 +3530,55 @@ SystemVersType		GetSystemVers(void)
 	return s_sysVers;
 }
 
+UInt8			GetSystemVersComponents(UInt16 *out_majorP, UInt8 *out_minorP, SystemVersType sysVers)
+{
+	UInt8		out_dotI = 0;
+	
+	if (sysVers == 0) {
+		sysVers = GetSystemVers();
+	}
+	
+	*out_majorP = (UInt16)bcdToDec(sysVers >> 16);
+	*out_minorP = (UInt8)bcdToDec((sysVers >> 8) & 0xFF);
+	out_dotI	= (UInt8)bcdToDec(sysVers & 0xFF);
+	
+	return out_dotI;
+}
+
 SuperString		GetSystemVersStr(SystemVersType sysVers)
 {
-	SuperString		versStr = "macOS 1";
-
-	sysVers &= 0xFFFFFF00;
-
-	if (sysVers < kMacOS_11_0) {
-		versStr += "0.";
+	SuperString		nameStr;
+	SuperString		versStr = "macOS %d.%d.%d (%s)";
+	UInt16			majorI;
+	UInt8			minorI, dotI(GetSystemVersComponents(&majorI, &minorI, sysVers));
+	
+	if (sysVers < kMacOS_11) {
+		sysVers &= 0xFFFFFF00;
 	} else {
-		versStr += "1.";
+		sysVers &= 0xFFFF0000;
 	}
 
 	switch (sysVers) {
-		default:			versStr += "Unknown System";	break;
-		case kMacOS_System6:versStr =  "System 6";			break;
-		case kMacOS_10_3:	versStr += "3 (Panther)";		break;
-		case kMacOS_10_4:	versStr += "4 (Tiger)";			break;
-		case kMacOS_10_5:	versStr += "5 (Leopard)";		break;
-		case kMacOS_10_6:	versStr += "6 (Snow Leopard)";	break;
-		case kMacOS_10_7:	versStr += "7 (Lion)";			break;
-		case kMacOS_10_8:	versStr += "8 (Mountain Lion)";	break;
-		case kMacOS_10_9:	versStr += "9 (Mavericks)";		break;
-		case kMacOS_10_10:	versStr += "10 (Yosemite)";		break;
-		case kMacOS_10_11:	versStr += "11 (El Capitan)";	break;
-		case kMacOS_10_12:	versStr += "12 (Sierra)";		break;
-		case kMacOS_10_13:	versStr += "13 (High Sierra)";	break;
-		case kMacOS_10_14:	versStr += "14 (Mojave)";		break;
-		case kMacOS_10_15:	versStr += "15 (Catalina)";		break;
-		case kMacOS_11_0:	versStr += "0 (Big Sur)";		break;
-		case kMacOS_11_1:	versStr += "1 (Monterey)";		break;
-		case kMacOS_11_2:	versStr += "2 (?)";				break;
+		default:			nameStr = "Unknown";		break;
+		case kMacOS_10_3:	nameStr = "Panther";		break;
+		case kMacOS_10_4:	nameStr = "Tiger";			break;
+		case kMacOS_10_5:	nameStr = "Leopard";		break;
+		case kMacOS_10_6:	nameStr = "Snow Leopard";	break;
+		case kMacOS_10_7:	nameStr = "Lion";			break;
+		case kMacOS_10_8:	nameStr = "Mountain Lion";	break;
+		case kMacOS_10_9:	nameStr = "Mavericks";		break;
+		case kMacOS_10_10:	nameStr = "Yosemite";		break;
+		case kMacOS_10_11:	nameStr = "El Capitan";		break;
+		case kMacOS_10_12:	nameStr = "Sierra";			break;
+		case kMacOS_10_13:	nameStr = "High Sierra";	break;
+		case kMacOS_10_14:	nameStr = "Mojave";			break;
+		case kMacOS_10_15:	nameStr = "Catalina";		break;
+		case kMacOS_11:		nameStr = "Big Sur";		break;
+		case kMacOS_12:		nameStr = "Monterey";		break;
+		case kMacOS_13:		nameStr = "Next";			break;
 	}
-	
+
+	versStr.ssprintf(NULL, (int)majorI, (int)minorI, (int)dotI, nameStr.utf8Z());	
 	return versStr;
 }
 

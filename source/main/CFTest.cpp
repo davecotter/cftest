@@ -16,13 +16,13 @@
 #if 0
 	#define		kTest_BitDepthAndPtrSize			0
 	#define		kTest_CFTicks						0
-	#define		kTest_StringCompare					0
-	#define		kTest_EncodingConversion			1
+	#define		kTest_StringCompare					1
+	#define		kTest_EncodingConversion			0
 	#define		kTest_Locale						0
 	#define		kTest_LocToEncoding					0
 	#define		kTest_DateTime						0
 	#define		kTest_TimeZone						0
-	#define		kTest_Sprintf						1
+	#define		kTest_Sprintf						0
 	#define		kTest_Bundle						0
 #else
 	#define		kTest_BitDepthAndPtrSize			1
@@ -408,6 +408,17 @@ void	CFTest()
 			CFReportUnitTest("Convert to/from DataRef", str != SuperString(kDataRefStr));
 		}
 		
+		{
+			SuperString				str1("dave"), str2("Karen");
+			CFComparisonResult		compareResult = kCFCompareEqualTo;
+
+			compareResult = CFStringCompare(str1.ref(), str2.ref());
+			CFReportUnitTest("dave < Karen", compareResult != kCFCompareLessThan);
+
+			compareResult = CFStringCompare(str2.ref(), str1.ref());
+			CFReportUnitTest("Karen > dave", compareResult != kCFCompareGreaterThan);
+		}
+
 		{
 			SuperString		str1("foscoobyar");
 			SuperString		str2("scooby");
@@ -1326,7 +1337,7 @@ void	CFTest()
 
 						{
 #if OPT_WINOS
-							//Log("Exception report here is OK and expected. Please ignore this:");
+							Logf("Exception report here is OK and expected. Please ignore this:");
 #endif
 							goodB = !dictRef.ContainsKey("Playlists\\25\\Columns\\SORTDIR");
 							CFReportUnitTest("CFDict key as path: invalid array index", !goodB);
