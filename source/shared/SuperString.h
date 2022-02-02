@@ -326,6 +326,7 @@ public:
 	#ifdef _HAS_QSTR_
 	QString		q_str() const;
 	SuperString(const QString& str);
+	SuperString(const QByteArray& str);
 	operator QString() const { return q_str(); }
 	#endif
 
@@ -508,6 +509,9 @@ public:
 	void	Set(const UCharVec& byteVec, CFStringEncoding encoding = kCFStringEncodingUTF8);
 	
 	void	assign(const UTF8Char *begin_bytesP, const UTF8Char *end_bytesP, CFStringEncoding encoding = kCFStringEncodingUTF8);
+
+	//	padded string, pad string
+	SuperString&	pad(size_t charsL);
 	
 /*
 	void	assign(const UTF8Char *beginZ, const UTF8Char *endZ, CFStringEncoding encoding = kCFStringEncodingUTF8) {

@@ -434,6 +434,7 @@ int		AssertAlert(const char *msgZ, const char *fileZ, long lineL, bool noThrowB 
 #ifndef _USTRING_
 	#define _USTRING_
 	typedef std::basic_string<UTF8Char, std::char_traits<UTF8Char>, std::allocator<UTF8Char> > ustring;
+	typedef	std::vector<ustring>		MenuVec;
 #endif
 
 #ifndef uc

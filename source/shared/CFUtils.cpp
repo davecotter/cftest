@@ -2271,10 +2271,16 @@ void			CFDebugBreak()
 #if defined(kDEBUG) || DEBUG
 	if (g_debugBreakB && CFDebuggerAttached()) {
 		#if OPT_MACOS
-			__asm__("int $3\n" : : );
+			#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_12_0
+				__builtin_debugtrap();
+			#else
+				__asm__("int $3\n" : : );
+			#endif
 		#elif _QT_
+			//	windows Qt
 			__debugbreak();
 		#else
+			//	windows msdev
 			DebugBreak();
 		#endif
 	}

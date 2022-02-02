@@ -909,6 +909,12 @@ SuperString::SuperString(const QString& str)
 	SetNULL();
 	Set(uc(str.toStdString().c_str()));
 }
+
+SuperString::SuperString(const QByteArray& str)
+{
+	SetNULL();
+	Set(uc(QString(str).toStdString().c_str()));
+}
 #endif
 
 class SS_ForEach_Ascii {
@@ -3297,6 +3303,15 @@ SuperString&		SuperString::UnderScoresToSpaces()
 	Set(strRef.Get());
 	return Replace("_", " ");
 }
+
+SuperString&		SuperString::pad(size_t charsL)
+{
+	while (size() < charsL) {
+		append(" ");
+	}
+
+	return *this;
+}
 	
 SuperString&		SuperString::Enquote(EnquoteType quoteType, bool only_if_notB)
 {
@@ -3364,7 +3379,6 @@ SuperString			SuperString::Quoted(EnquoteType quoteType) const
 {
 	return SuperString(*this).Enquote(quoteType);
 }
-
 
 SuperString&		SuperString::NoQuotes(bool recoverB)
 {
